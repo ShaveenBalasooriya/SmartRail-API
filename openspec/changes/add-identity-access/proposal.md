@@ -28,8 +28,8 @@ Stories: NC-08, GRD-09, AUD-06, CAT-01, CAT-11, PAX-01; the authentication half 
 - Rate limiting on public and provider endpoints (429 with `Retry-After`).
 - Seed data: staff accounts and the provider's API key hash; Authentik blueprint with the staff client
   and the matching seeded users.
-- OpenAPI security schemes and a dedicated Authentik public client so staff can sign in and call
-  protected endpoints from Scalar; the provider key can be entered in Scalar.
+- OpenAPI security schemes so a staff bearer token or the provider key can be entered in Scalar to
+  call protected endpoints.
 - A basic threat model and the data-classification table (EP-14, EP-15 documentation).
 
 ## Capabilities
@@ -41,7 +41,7 @@ Stories: NC-08, GRD-09, AUD-06, CAT-01, CAT-11, PAX-01; the authentication half 
 - `role-based-access`: the role catalogue and how every endpoint is classified and enforced (staff
   role, public, provider).
 - `provider-api-keys`: authenticating the catering provider by API key.
-- `api-explorer-authentication`: signing in to protected endpoints from the Scalar API reference.
+- `api-explorer-authentication`: calling protected endpoints from the Scalar API reference.
 - `api-rate-limiting`: request limits on public and provider endpoints.
 
 ### Modified Capabilities

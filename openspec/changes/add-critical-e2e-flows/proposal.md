@@ -15,6 +15,7 @@ changes.
 
 - Five automated end-to-end flows against the full Compose stack (API, PostgreSQL, Authentik,
   simulated provider), run in CI on every promotion to `main` and on demand for `dev`.
+- Error tracking (Sentry) and OpenTelemetry metrics, deferred from the foundation.
 - A publish-to-channel latency metric, per channel (public stream, Guard stream, provider webhook),
   and a way to read it for a live change.
 - A test strategy document, functional test scenarios, a defect log and a final quality assessment.
@@ -25,6 +26,7 @@ changes.
 
 - `end-to-end-flows`: the five critical flows and how they run.
 - `publish-latency-metric`: measuring how quickly a published change reaches each channel.
+- `error-tracking`: unhandled exceptions reported without personal data, and running without it.
 
 ### Modified Capabilities
 
@@ -41,4 +43,4 @@ None.
 
 - New test project `SmartRail.EndToEndTests` and a CI job.
 - `docs/quality/` documents (strategy, scenarios, defect log, assessment) in the docs repository.
-- A metric exported through the existing OpenTelemetry/Sentry setup.
+- A metric exported through the OpenTelemetry/Sentry setup this change adds.

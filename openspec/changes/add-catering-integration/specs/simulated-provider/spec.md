@@ -7,7 +7,7 @@ Provides a small separate application standing in for the external catering prov
 ## ADDED Requirements
 
 ### Requirement: Separate process
-The simulated provider SHALL run as its own application with its own storage, communicating with SmartRail only through the provider API and its webhook endpoint, and SHALL NOT reference SmartRail's code or database (brief §12: the provider remains a separate system).
+The simulated provider SHALL run as its own application with its own in-memory state, communicating with SmartRail only through the provider API and its webhook endpoint, and SHALL NOT reference SmartRail's code or database (brief §12: the provider remains a separate system).
 
 #### Scenario: Independence
 - **WHEN** the simulated provider is built

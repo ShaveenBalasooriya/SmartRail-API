@@ -49,13 +49,6 @@ An open stream SHALL send a comment heartbeat at least every 20 seconds so clien
 - **WHEN** no journey changes for a minute
 - **THEN** the client still receives heartbeats
 
-### Requirement: Slow clients do not block others
-A client that stops reading SHALL be disconnected after its pending-event buffer exceeds a limit (default 256 events) without delaying delivery to other clients, and may reconnect with `Last-Event-ID`.
-
-#### Scenario: Stalled consumer
-- **WHEN** one client stops reading while events keep arriving
-- **THEN** it is disconnected and all other clients keep receiving events
-
 ### Requirement: No personal data in streams
 Streams SHALL carry railway data only; the Guard stream SHALL identify the guard only by the credential used to connect and SHALL NOT log it beyond the staff ID (EP-14, M-03).
 

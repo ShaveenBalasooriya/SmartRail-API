@@ -4,7 +4,7 @@
 
 The repository is empty apart from a README. `../docs/architecture.md` fixes the architecture: a
 modular monolith of six modules, three layers per module, a PostgreSQL schema per module with no
-cross-schema foreign keys, MediatR for in-process events, Sentry for observability and Docker Compose
+cross-schema foreign keys, MediatR for in-process events and Docker Compose
 for local running. This design turns those decisions into a concrete solution layout. See
 `proposal.md` for why the foundation comes first.
 
@@ -14,7 +14,7 @@ for local running. This design turns those decisions into a concrete solution la
 - A solution layout in which the module boundary is enforced by project references, not just by
   convention.
 - One command that starts the whole stack locally, and one CI workflow every stacked PR must pass.
-- Conventions (errors, JSON, logging, seeding) defined once in the Host and the Shared Kernel, so no
+- Conventions (errors, JSON, logging) defined once in the Host and the Shared Kernel, so no
   module redefines them.
 
 **Non-Goals:**
@@ -43,7 +43,6 @@ SmartRail-API/
     SmartRail.<Module>.UnitTests          Domain and Application, no database
     SmartRail.<Module>.IntegrationTests   WebApplicationFactory against PostgreSQL in Testcontainers
     SmartRail.ArchitectureTests           enforces the reference rules below
-  seed/                                   JSON seed files, one folder per module
   compose.yaml
   .github/workflows/ci.yml
 ```
@@ -69,11 +68,8 @@ infrastructure without adding isolation that separate schemas don't already give
 
 ### D3. Seeding
 
-`seed/<module>/*.json` files are read by an `ISeeder` that each module implements. The Host runs the
-seeders after migrations, in dependency order: Identity, then Rail Network, then Catering. Each seeder
-upserts by natural key (a station code, a staff username) inside one transaction per module, so a
-failure rolls back only that module's seed and stops start-up. Secrets referenced by the seed files
-(the provider API key) are read from configuration through `ISecretSource`.
+Not part of the foundation. `add-identity-access` is the first change with seed data and adds the
+simple seed step and the `seed/` folder there.
 
 ### D4. HTTP conventions in the Host
 
@@ -88,17 +84,15 @@ failure rolls back only that module's seed and stops start-up. Secrets reference
 - `TimeProvider` is injected everywhere instead of reading `DateTime.UtcNow`, so time-dependent rules
   (the journey day, freshness, retry backoff) can be tested.
 
-### D5. Logging and Sentry
+### D5. Logging
 
 - Logging uses the built-in JSON console formatter (`AddJsonConsole`) rather than Serilog. That is
   one less dependency, and Compose collects the console output.
 - Request logging uses a custom middleware rather than `UseHttpLogging`, because `UseHttpLogging` can
   record headers and bodies, and this design keeps them out by construction.
-- Sentry uses `Sentry.AspNetCore` with `SendDefaultPii = false`, a `SetBeforeSend` that strips request
-  headers, cookies and the client IP, and a DSN taken from configuration. An empty DSN disables
-  Sentry.
-- OpenTelemetry metrics are registered here (`AddOpenTelemetry().WithMetrics(...)`) with the Sentry
-  exporter, so that later changes only add their own `Meter` instruments.
+- Sentry error tracking and OpenTelemetry metrics are deliberately not part of the foundation.
+  Nothing here needs them, so they are added by `add-critical-e2e-flows`, the first change that
+  records a metric.
 
 ### D5a. OpenAPI and Scalar
 .NET 10's built-in `Microsoft.AspNetCore.OpenApi` generates the document (`AddOpenApi`, `MapOpenApi`
@@ -106,18 +100,22 @@ at `/openapi/v1.json`) and `Scalar.AspNetCore` serves the reference (`MapScalarA
 `/scalar`). Both are mapped only when `Documentation:Enabled` is true, which defaults to true in
 Development and E2E. Endpoints get tags, summaries and access descriptions from endpoint metadata,
 added once through the `.RequireStaffRole`/`.AllowAnonymousPublic`/`.RequireProvider` helpers from
-`add-identity-access`. An architecture test compares the mapped `/api/v1` endpoints with the document.
+`add-identity-access`.
 *Alternative:* Swashbuckle/Swagger UI. Rejected by the owner in favour of Scalar.
 
 ### D6. Local stack (`compose.yaml`)
 
-- **Services:** `api`, `postgres` (17), `authentik-server`, `authentik-worker` and the database
-  Authentik itself requires. The simulated catering provider is added later by
+- **Services:** `api`, `postgres` (the API's database, 17) and Authentik as `postgresql`,
+  `server` and `worker`. The latest Authentik needs no Redis, so there is no Redis service. The
+  Authentik services follow the owner's own compose file: `postgresql` is `postgres:16-alpine`
+  with a health check, `server` publishes ports 9000 and 9443, `worker` mounts the Docker socket,
+  `data`, `certs` and `custom-templates`, and both use `ghcr.io/goauthentik/server` at a tag taken
+  from `AUTHENTIK_TAG`. The simulated catering provider is added later by
   `add-catering-integration`.
 - **Health checks:** `api` has a health check on `/health/ready`, and its `depends_on` waits for
   PostgreSQL to be healthy.
-- **Secrets:** they come from an untracked `.env` file. A checked-in `.env.example` documents the
-  variables.
+- **Secrets:** they come from an untracked `.env` file (`PG_PASS`, `AUTHENTIK_SECRET_KEY` and the
+  API database password). A checked-in `.env.example` documents the variables.
 
 ### D7. CI
 

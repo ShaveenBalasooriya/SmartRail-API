@@ -1,0 +1,50 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+
+## Test output
+[Tt]est[Rr]esult*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.trx
+*.coverage
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+## Local configuration and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+
+## Docker and local data
+.data/
+# Authentik bind mounts created by compose.yaml
+/data/
+/certs/
+/custom-templates/
+*.pid
+
+## Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## OpenSpec and agent scratch space
+.opencode/tmp/

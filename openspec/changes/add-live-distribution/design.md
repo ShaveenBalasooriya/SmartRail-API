@@ -28,18 +28,19 @@ and stream payloads, so the "same data" requirement holds by construction. Guida
 - `GET /api/v1/guard/stream` (SSE, Guard role)
 
 ### D3. Stream implementation
-A singleton `StreamHub` holds one bounded `Channel<StreamEnvelope>` (capacity 256, `DropWrite` then
-mark overflow) per connection. A MediatR `JourneyStateChanged` handler loads the event snapshot via
+A singleton `StreamHub` holds one unbounded `Channel<StreamEnvelope>` per connection, so a
+write to one connection never waits on another. A MediatR `JourneyStateChanged` handler loads the event snapshot via
 `ILiveJourneys` and offers it to each connection whose filter matches. The endpoint writes `id:`,
 `event:` and `data:` frames with `TypedResults.ServerSentEvents` (.NET 10) and flushes after each.
-Overflow closes the connection.
+A heartbeat comment is written every 15 seconds. There is no slow-consumer cut-off: MVP 1 has a
+handful of clients and small events, so a stalled client's buffer stays small until its connection
+drops.
 
 ### D4. Resume without gaps or duplicates
 On connect with `Last-Event-ID = N`: register the connection in the hub in *buffering* mode first,
 then read events `> N` from `ILiveJourneys`, send them, then drain the buffer skipping any event with
 position ≤ the last position sent, then go live. Registering before reading closes the gap; skipping
-by position removes the overlap. The safety window from `add-live-running-state` D3 is applied to the
-catch-up read.
+by position removes the overlap.
 
 ### D5. Retained window
 `ILiveJourneys.OldestRetainedPosition` decides `reset`. MVP 1 deletes nothing, so `reset` happens only
@@ -57,6 +58,8 @@ held in memory only (`add-identity-access` D6).
 
 - [In-memory hub is lost on restart, all streams drop] → Clients reconnect with `Last-Event-ID`
   and receive catch-up; this is the design.
+- [A stalled client's buffer grows until it disconnects] → Small at MVP 1 volume; add a bounded
+  buffer and cut-off if the number of clients grows.
 - [A single instance only] → MVP 1 runs one instance; multiple instances would need a shared
   backplane (noted for later).
 - [Window read of departures is computed on request] → Dataset is one day of nine stations; no

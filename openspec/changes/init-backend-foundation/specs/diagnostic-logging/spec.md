@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Gives operators structured diagnostic logs and error tracking to run the platform in production (brief §19, EP-17), while guaranteeing that secrets and passenger personal data never reach them (EP-14, S-20).
+Gives operators structured diagnostic logs to run the platform in production (brief §19, EP-17), while guaranteeing that secrets and passenger personal data never reach them (EP-14, S-20).
 
 ## ADDED Requirements
 
@@ -18,14 +18,14 @@ The system SHALL write one structured (JSON) log entry for every completed HTTP 
 - **THEN** the entry records the route template `/api/v1/journeys/{journeyId}`, not the raw path with its query string
 
 ### Requirement: Secrets never logged
-The system SHALL NOT write bearer tokens, `Authorization` header values, API keys, cookies or connection strings to any log entry or error report, at any log level (EP-15, EP-14).
+The system SHALL NOT write bearer tokens, `Authorization` header values, API keys, cookies or connection strings to any log entry, at any log level (EP-15, EP-14).
 
 #### Scenario: Authenticated request
 - **WHEN** a request carrying an `Authorization: Bearer` header or an `X-Api-Key` header is logged
-- **THEN** no log entry or error report contains the token or the key
+- **THEN** no log entry contains the token or the key
 
 ### Requirement: No passenger personal data or client IP in logs
-The system SHALL NOT write passenger personal data or client IP addresses to any log entry or error report (EP-14, S-20, M-03).
+The system SHALL NOT write passenger personal data or client IP addresses to any log entry (EP-14, S-20, M-03).
 
 #### Scenario: Public request from a passenger
 - **WHEN** an anonymous passenger request is logged
@@ -34,14 +34,3 @@ The system SHALL NOT write passenger personal data or client IP addresses to any
 #### Scenario: Automated check
 - **WHEN** the test suite runs the PII log test against a captured log of representative requests
 - **THEN** the test fails if any entry contains a configured sensitive value (a token, an API key or an IP address)
-
-### Requirement: Error tracking
-Every unhandled exception SHALL be reported to the configured error-tracking service with its correlation ID and with default personal-data collection disabled. When no error-tracking service is configured, the system SHALL keep running and only log locally (EP-17).
-
-#### Scenario: Unhandled exception
-- **WHEN** an endpoint throws an unhandled exception
-- **THEN** one error report is sent with the correlation ID and the route template, and without request headers, body or client IP
-
-#### Scenario: Error tracking not configured
-- **WHEN** the application starts without error-tracking configuration
-- **THEN** it starts normally and writes errors to the local log only

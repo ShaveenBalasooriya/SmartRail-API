@@ -1,0 +1,14 @@
+# Keep the build context small: only what the Dockerfile copies is needed.
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/TestResults/
+.git/
+.github/
+.env
+.env.*
+!.env.example
+compose.yaml
+*.md

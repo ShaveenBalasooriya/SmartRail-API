@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SmartRail.LiveOperations.Domain/SmartRail.LiveOperations.Domain.csproj" />
+    <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.LiveOperations.Contracts/SmartRail.LiveOperations.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+  </ItemGroup>
+</Project>
+

@@ -39,6 +39,6 @@ None.
 
 ## Impact
 
-- New `audit` schema; database role grants that remove UPDATE/DELETE on it.
+- New `audit` schema with a trigger that refuses UPDATE and DELETE on its entries.
 - `SmartRail.Audit.Contracts` (`IAuditRecorder`), used by Live Operations in later changes.
 - Auditor endpoints under `/api/v1/audit`.

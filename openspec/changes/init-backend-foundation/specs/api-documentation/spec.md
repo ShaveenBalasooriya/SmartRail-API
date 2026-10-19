@@ -37,10 +37,3 @@ The OpenAPI document and the Scalar reference SHALL be enabled in the Developmen
 #### Scenario: Production
 - **WHEN** the application runs in a production environment without the enabling setting
 - **THEN** `/scalar` and `/openapi/v1.json` return HTTP 404
-
-### Requirement: Document stays in step with the code
-The OpenAPI document SHALL be generated from the running endpoints, and a build check SHALL fail when a mapped `/api/v1` endpoint is missing from it.
-
-#### Scenario: Endpoint missing from the document
-- **WHEN** an endpoint is mapped but excluded from the document
-- **THEN** the check fails the build

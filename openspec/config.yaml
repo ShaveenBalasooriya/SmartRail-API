@@ -32,16 +32,20 @@ rules:
     - Name the epic and the user-story IDs from ../docs/user-journeys that the change delivers
   specs:
     - Every requirement must trace to a story ID, an epic or an architecture decision; cite it in the requirement text
-    - Express edge cases as scenarios, not as prose
+    - Keep scenarios to the main behaviour and the edge cases a story or the scope names; do not invent extra edge cases
+    - Do not specify defensive hardening, caching or resilience that no story, epic or architecture decision asks for
     - Mark anything inferred rather than found in the planning documents with [A]
   tasks:
     - Size each task group so it can land as one reviewable stacked pull request
-    - Each task names how it is verified
+    - The default verification is a clean build and running the application; name it as such
+    - Ask for an automated test only for domain rules, a genuinely risky integration point, or one of the five end-to-end flows, and never one test per scenario
+    - Create a module's projects, migrations and wiring in the change that first needs them, not in advance
 
 operations:
   apply:
     guidance:
       - Treat the change's specs as the single source of truth and do not implement any requirement that is not listed
+      - Build the simplest thing that satisfies the requirement; do not add tests, checks, abstractions or hardening the task does not ask for
       - Before writing code, restate the acceptance criteria (the requirements and scenarios) and confirm your understanding with the owner
       - Raise any conflict between the specs and the planning documents instead of resolving it silently
   archive:

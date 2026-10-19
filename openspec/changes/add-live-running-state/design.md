@@ -36,16 +36,15 @@ which gives gap-free sequence numbers.
 ### D3. Stream position
 `stream_position` is a `bigint` from a PostgreSQL sequence, assigned at insert. Sequences can leave
 gaps on rollback and can commit out of order under concurrency; consumers therefore treat positions
-as ordered but not contiguous, and Distribution reads "after position N" with a short safety window
-(re-reads the last 2 seconds of positions on reconnect and de-duplicates by event ID). The spec
-only promises strict increase, which a sequence gives.
+as ordered but not contiguous, and Distribution reads "after position N". The spec only promises
+strict increase, which a sequence gives.
 
 ### D4. Completion job
 A `BackgroundService` every 30 s checks running journeys whose penultimate calling stop has departed
 and whose expected terminus arrival ≤ now, and applies a `CompletionFact` through the same sink.
 
 ### D5. Announcement
-After commit, the post-commit publisher (Shared Kernel, introduced with journey generation) publishes
+After commit, a small post-commit publisher in the Shared Kernel (added by this change; it collects notifications and publishes them once the unit of work commits) publishes
 `JourneyStateChanged(journeyId, eventId, sequenceNumber, streamPosition, eventType)`.
 
 ### D6. Snapshot shape
@@ -54,8 +53,9 @@ with scheduled/expected/actual times, current platform, platform-changed time), 
 
 ## Risks / Trade-offs
 
-- [Out-of-order commit of stream positions could make a catch-up miss an event] → The safety window
-  and event-ID de-duplication in D3.
+- [Out-of-order commit of stream positions could, in theory, make a catch-up miss an event] → Needs
+  two journeys committing within milliseconds while a client reconnects; accepted at MVP 1 volume
+  (one controller, a handful of guards). A catch-up safety window is the fix if it is ever seen.
 - [Completion depends on the expected arrival; a guard who never logs the penultimate stop leaves the
   journey `running`] → Visible as stale in the operations view; accepted for MVP 1.
 
