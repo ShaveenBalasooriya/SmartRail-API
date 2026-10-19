@@ -1,0 +1,49 @@
+schema: spec-driven
+
+# Project context: constraints an agent cannot infer by reading the code.
+context: |
+  SmartRail-API is the backend for SmartRail MVP 1, a single source of truth for live train running on
+  a two-line, nine-station network. The planning documents live in the sibling docs repository:
+  ../docs/scoping/mvp-1-scope.md (scope and epics), ../docs/architecture.md (architecture decisions),
+  ../docs/data-model.md (tables) and ../docs/user-journeys/ (user stories with IDs such as NC-03,
+  GRD-07, CAT-05, PAX-02, AUD-05). Where these disagree with a change's specs, the specs win and the
+  disagreement must be raised with the owner.
+  MVP 1 roles: Network Controller, Guard and Auditor (staff, seeded accounts); anonymous passengers;
+  one catering provider as a machine client with an API key. Scheduler, Driver, System Admin,
+  passenger accounts, notices to crew, skipped-stop and early-termination changes are deferred and
+  must not be built.
+  Stack: .NET 10, ASP.NET Core Minimal APIs (no MVC controllers), PostgreSQL, EF Core, MediatR,
+  Server-Sent Events, Authentik (OIDC) for staff identity, Sentry, Docker Compose, xUnit and
+  Testcontainers.
+  Architecture: modular monolith with six modules (Identity & Access, Rail Network, Live Operations,
+  Distribution, Catering Integration, Audit). Each module has Domain, Application and
+  Infrastructure & Endpoints layers, and Domain and Application never reference EF Core, HTTP or
+  Authentik. Each module that keeps data owns one PostgreSQL schema and one DbContext. No foreign key
+  and no query crosses a schema boundary; modules interact only through MediatR notifications and
+  in-process query contracts.
+  Authorisation decisions are made by SmartRail from its own staff records, never from roles in
+  Authentik tokens. No passenger personal data, token, API key or client IP address is ever written
+  to a log or to the audit record.
+  Workflow: stacked pull requests with Graphite, trunk dev; main only receives promotions from dev.
+
+rules:
+  proposal:
+    - Include an Out of Scope section listing what this change deliberately does not build
+    - Name the epic and the user-story IDs from ../docs/user-journeys that the change delivers
+  specs:
+    - Every requirement must trace to a story ID, an epic or an architecture decision; cite it in the requirement text
+    - Express edge cases as scenarios, not as prose
+    - Mark anything inferred rather than found in the planning documents with [A]
+  tasks:
+    - Size each task group so it can land as one reviewable stacked pull request
+    - Each task names how it is verified
+
+operations:
+  apply:
+    guidance:
+      - Treat the change's specs as the single source of truth and do not implement any requirement that is not listed
+      - Before writing code, restate the acceptance criteria (the requirements and scenarios) and confirm your understanding with the owner
+      - Raise any conflict between the specs and the planning documents instead of resolving it silently
+  archive:
+    guidance:
+      - Confirm every task is checked and the change validates with openspec validate --strict before archiving
