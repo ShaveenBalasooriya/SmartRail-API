@@ -58,8 +58,7 @@ public sealed class MigrationTests(PostgresFixture postgres) : IDisposable
                 $"SELECT \"MigrationId\" FROM \"{schema}\".\"__ef_migrations_history\"",
                 reader => reader.GetString(0));
 
-            var migration = Assert.Single(applied);
-            Assert.EndsWith("_InitialCreate", migration, StringComparison.Ordinal);
+            Assert.Contains(applied, migration => migration.EndsWith("_InitialCreate", StringComparison.Ordinal));
         }
     }
 

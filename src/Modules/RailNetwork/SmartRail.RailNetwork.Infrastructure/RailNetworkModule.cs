@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SmartRail.RailNetwork.Application;
+using SmartRail.RailNetwork.Infrastructure.JourneyGeneration;
 using SmartRail.RailNetwork.Infrastructure.Persistence;
+using SmartRail.RailNetwork.Infrastructure.Queries;
 
 namespace SmartRail.RailNetwork.Infrastructure;
 
@@ -33,6 +36,10 @@ public static class RailNetworkModule
             .UseNpgsql(connectionString, npgsql => npgsql
                 .MigrationsAssembly(typeof(RailNetworkDbContext).Assembly.FullName)
                 .MigrationsHistoryTable("__ef_migrations_history", RailNetworkDbContext.Schema)));
+
+        services.AddRailNetworkApplication(configuration);
+        services.AddRailNetworkJourneyGeneration();
+        services.AddRailNetworkQueries();
 
         return services;
     }

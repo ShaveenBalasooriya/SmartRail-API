@@ -46,22 +46,15 @@ Each event SHALL carry its ID, type, journey ID, sequence number, stream positio
 - **THEN** its snapshot equals the journey's live state immediately after that event was committed
 
 ### Requirement: Announced only after commit
-Each event SHALL be announced to other modules only after its transaction commits, and SHALL never be announced for a rolled-back change (architecture §3).
+Each event SHALL be announced to other modules only after the transaction that appended it commits, and SHALL never be announced for a rolled-back change (architecture §3).
 
 #### Scenario: Rolled back
-- **WHEN** a status change fails after its event was appended but before commit
+- **WHEN** applying a fact fails after its event was appended but before commit
 - **THEN** no announcement is made and the event does not exist
 
 ### Requirement: Events readable by position
-Other modules SHALL be able to read, through the live-state contract, the events after a given stream position in order, optionally filtered by journey or by station, and the oldest position still retained (EP-09).
+Other modules SHALL be able to read, through the live-state contract, the events after a given stream position in order, optionally filtered by journey, and the oldest position still retained (EP-09).
 
 #### Scenario: Catch-up read
 - **WHEN** a module asks for events after position 120
 - **THEN** it receives every event with a position above 120, in position order
-
-### Requirement: Retention
-Journey events SHALL be retained for at least 48 hours. MVP 1 SHALL NOT remove any event, because retention and purge jobs are deferred (EP-14 Out).
-
-#### Scenario: Recent events
-- **WHEN** a module asks for events from the last 48 hours
-- **THEN** all of them are returned

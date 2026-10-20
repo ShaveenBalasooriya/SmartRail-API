@@ -159,7 +159,7 @@ public sealed class EntityTests
     [Fact]
     public void Two_entities_of_the_same_type_with_the_same_id_are_equal()
     {
-        var id = Guid.NewGuid();
+        var id = Guid.CreateVersion7();
 
         Assert.Equal(new ProbeEntity(id), new ProbeEntity(id));
     }
@@ -167,13 +167,13 @@ public sealed class EntityTests
     [Fact]
     public void Entities_with_different_ids_are_not_equal()
     {
-        Assert.NotEqual(new ProbeEntity(Guid.NewGuid()), new ProbeEntity(Guid.NewGuid()));
+        Assert.NotEqual(new ProbeEntity(Guid.CreateVersion7()), new ProbeEntity(Guid.CreateVersion7()));
     }
 
     [Fact]
     public void An_entity_records_and_clears_its_domain_events()
     {
-        var entity = new ProbeEntity(Guid.NewGuid());
+        var entity = new ProbeEntity(Guid.CreateVersion7());
 
         entity.RaiseEvent(new ProbeEvent(DateTimeOffset.UnixEpoch));
 

@@ -7,6 +7,7 @@ using SmartRail.Host.Persistence;
 using SmartRail.IdentityAccess.Infrastructure;
 using SmartRail.LiveOperations.Infrastructure;
 using SmartRail.RailNetwork.Infrastructure;
+using SmartRail.RailNetwork.Infrastructure.Endpoints;
 using SmartRail.Audit.Infrastructure.Persistence;
 using SmartRail.Catering.Infrastructure.Persistence;
 using SmartRail.IdentityAccess.Infrastructure.Persistence;
@@ -102,11 +103,14 @@ public static class HostComposition
         // Each module's group is created here so the base path and the tag are decided once. A
         // later change adds its endpoints to its own group inside its own Infrastructure project.
         api.MapGroup("/identity").WithTags("Identity");
-        api.MapGroup("/network").WithTags("Network");
+        var network = api.MapGroup("/network").WithTags("Network");
+        var timetable = api.MapGroup("/timetable").WithTags("Timetable");
         api.MapGroup("/operations").WithTags("Operations");
         api.MapGroup("/distribution").WithTags("Public");
         api.MapGroup("/catering").WithTags("Provider");
         api.MapGroup("/audit").WithTags("Audit");
+
+        network.MapRailNetworkEndpoints(timetable);
 
         return app;
     }

@@ -137,6 +137,8 @@ modules exist).
   own schema.
 - **No foreign key crosses a schema boundary.** Another module's entity is stored as a plain
   identifier and resolved through that module's contract.
+- Identifiers are generated in code with `Guid.CreateVersion7()`, never `Guid.NewGuid()`; the
+  correlation ID is the only exception.
 
 ### Identity
 
