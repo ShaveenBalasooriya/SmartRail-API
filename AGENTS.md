@@ -95,18 +95,43 @@ These are agreed decisions. Follow them; do not substitute alternatives.
 ### Modular monolith
 
 One ASP.NET Core process, divided internally into modules with hard boundaries. **Not**
-microservices. Each module has **three layers**, not four:
+microservices. Each module is **Clean Architecture with a CQRS pipeline**, in four projects under
+`src/Modules/<Module>/`, plus its public `Contracts` project in `src/Contracts/`
+(`../docs/architecture.md` §2 is the full description):
 
-| Layer | Contains | May depend on |
+| Project | Contains | References |
 |---|---|---|
-| **Domain** | Entities, value objects, domain events, invariants | nothing |
-| **Application** | Use-case handlers, orchestration, and *ports* (interfaces for persistence, other modules, external systems) | Domain only |
-| **Infrastructure & Endpoints** | EF Core repositories implementing the ports, Minimal API endpoint groups, external HTTP calls | Application, and so Domain |
+| **Domain** | Entities with behaviour, value objects, `<Entity>Errors`, pure domain services | Shared Kernel only |
+| **Application** | Vertical slices `<Feature>/<UseCase>/` (command or query, handler, validator); the feature's repository interface and response DTOs at the feature root; `Abstractions/` (`IUnitOfWork`, other ports); the implementations of the module's contract interfaces; handlers for other modules' events | Domain, Shared Kernel Application, Contracts |
+| **Infrastructure** | `Persistence/` (the `DbContext`, which implements `IUnitOfWork`; `Configurations/`; `Migrations/`), `Repositories/`, `Jobs/` (background services), external HTTP clients | Application |
+| **Api** | Carter modules per feature (`ICarterModule`) and their request DTOs | Application, Shared Kernel Api |
+| **Contracts** | Integration events (`INotification`), query contract interfaces, their DTOs | Shared Kernel, MediatR contracts |
 
-Dependencies point inward. Domain and Application must never reference EF Core, HTTP or Authentik.
+Rules:
 
-**Minimal APIs, not controllers.** Each module maps its own `MapGroup` inside its own project.
-There is no shared `Controllers/` folder.
+- Dependencies point inward. Domain and Application never reference EF Core, ASP.NET Core or
+  Authentik. Api never references Infrastructure. The Host references Api and Infrastructure only to
+  call their `Add…` extensions.
+- **Entities live in Domain**, never in Infrastructure. Private setters, a private constructor for EF
+  Core, a `static Create(...)` returning `Result<T>`, and behaviour as methods. EF Core maps the
+  Domain entities directly; there are no separate persistence models.
+- Concepts with their own rules are **value objects** with a validating `Create`.
+- **Every use case is a command or query** (`ICommand`, `ICommand<T>`, `IQuery<T>`) returning
+  `Result`/`Result<T>`, sent through MediatR. Handlers are `internal sealed`.
+- **Cross-cutting concerns are pipeline behaviours** (logging, then validation with FluentValidation),
+  never code inside handlers. Validation failures return a `ValidationResult`; nothing throws.
+- **Expected failures are `Result` values**, mapped to problem details at the edge with
+  `ToProblemDetails()`. Exceptions are only for bugs and infrastructure failures.
+- **Persistence goes through repositories and `IUnitOfWork`.** Raw SQL (`ON CONFLICT`, `FOR UPDATE`)
+  is allowed only inside a repository method.
+- **Background jobs only send commands**; the work is in the handler.
+- **Integration events are published after `IUnitOfWork.SaveChangesAsync` commits**, never before.
+- Each layer exposes one extension: `Add<Module>Application()`, `Add<Module>Infrastructure(configuration)`,
+  `Add<Module>Api()`.
+
+**Minimal APIs through Carter, not controllers.** Each module maps its own Carter modules inside its
+own Api project. An endpoint maps the request to a command or query, sends it and returns
+`TypedResults.X(...)` or `result.ToProblemDetails()`. There is no shared `Controllers/` folder.
 
 ### The six modules
 
@@ -119,9 +144,15 @@ There is no shared `Controllers/` folder.
 | **Catering Integration** | Provider read API, webhook subscriptions, delivery with sequence numbers, retry and duplicate handling | `catering` |
 | **Audit** | Append-only, hash-chained record of every staff change and every denied attempt; the Auditor's read view | `audit` |
 
-Plus two cross-cutting pieces: a **Shared Kernel** (base types, `Result`, pagination — no business
-logic, depends on nothing) and a **Host** (composition root; the only project that knows all
-modules exist).
+Plus two cross-cutting pieces:
+
+- **Shared Kernel**, three projects with no business logic: `SmartRail.SharedKernel` (`Entity`,
+  `ValueObject`, `IDomainEvent`, `Result`, `Error`, `ErrorType`, `ValidationResult`, pagination;
+  depends on nothing), `SmartRail.SharedKernel.Application` (CQRS interfaces and the pipeline
+  behaviours) and `SmartRail.SharedKernel.Api` (`ToProblemDetails`).
+- **Host**: the composition root. It registers every module's layers, MediatR with the pipeline
+  behaviours, maps the Carter modules under `/api/v1`, and owns the middleware pipeline. It is the only
+  project that knows all modules exist.
 
 ### How modules talk
 
@@ -129,7 +160,8 @@ modules exist).
 - **"Something happened"** → an in-process event via **MediatR**; interested modules register their
   own `INotificationHandler`.
 - **"What is the current state of X"** → a call to the owning module's **in-process query contract**
-  (an interface in its Application layer, resolved from DI).
+  (an interface in its Contracts project, implemented in its Application layer by sending the module's
+  own query, resolved from DI).
 
 ### Data
 
@@ -177,8 +209,9 @@ Keep testing lean:
   running the application.
 - Unit tests are for domain rules. Integration tests are for a few genuinely risky points
   (transactions, idempotent sync, delivery ordering), never one per spec scenario.
-- Do not add architecture tests, coverage checks, concurrency stress tests or fake-clock tests unless
-  a task names them.
+- `SmartRail.ArchitectureTests` holds the dependency-rule tests (NetArchTest) for the layering above;
+  extend them when a module is added. Do not add other architecture tests, coverage checks, concurrency
+  stress tests or fake-clock tests unless a task names them.
 
 ### Build order
 
