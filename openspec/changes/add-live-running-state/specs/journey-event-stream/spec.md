@@ -39,7 +39,7 @@ Every event SHALL also carry a stream position that strictly increases across al
 - **THEN** B's event has a higher stream position than A's
 
 ### Requirement: Event content
-Each event SHALL carry its ID, type, journey ID, sequence number, stream position, the fact's details, the source departure or change ID, the time the fact occurred, the time it was recorded and a snapshot of the journey's resulting live state (EP-09, CAT-05).
+Each event SHALL carry its ID, type, journey ID, sequence number, stream position, the source departure or change ID, the time the fact occurred, the time it was recorded and a snapshot of the journey's resulting live state (EP-09, CAT-05).
 
 #### Scenario: Snapshot matches state
 - **WHEN** an event is read back

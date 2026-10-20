@@ -34,7 +34,7 @@ public sealed class DependencyRuleTests
             typeof(RailNetwork.Api.DependencyInjection).Assembly),
         new(
             "LiveOperations",
-            Domain("LiveOperations"),
+            typeof(LiveOperations.Domain.Calculation.Fact).Assembly,
             typeof(LiveOperations.Application.DependencyInjection).Assembly,
             typeof(LiveOperations.Infrastructure.DependencyInjection).Assembly,
             typeof(LiveOperations.Api.DependencyInjection).Assembly),

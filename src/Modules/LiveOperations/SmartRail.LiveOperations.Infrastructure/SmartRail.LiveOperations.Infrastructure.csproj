@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../SmartRail.LiveOperations.Application/SmartRail.LiveOperations.Application.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.LiveOperations.Contracts/SmartRail.LiveOperations.Contracts.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
   </ItemGroup>
   <ItemGroup>
