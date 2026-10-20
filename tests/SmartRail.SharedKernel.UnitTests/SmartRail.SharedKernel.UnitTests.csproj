@@ -2,6 +2,8 @@
   <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../../src/SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
+    <ProjectReference Include="../../src/SmartRail.SharedKernel.Api/SmartRail.SharedKernel.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -10,5 +12,8 @@
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
   <ItemGroup><Using Include="Xunit" /></ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 </Project>
 
