@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="../SmartRail.Audit.Domain/SmartRail.Audit.Domain.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../../../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
     <ProjectReference Include="../../../Contracts/SmartRail.Audit.Contracts/SmartRail.Audit.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>

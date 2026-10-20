@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SmartRail.RailNetwork.Domain.Entities;
+using SmartRail.RailNetwork.Domain.ValueObjects;
 
 namespace SmartRail.RailNetwork.Infrastructure.Persistence.Configurations;
 
@@ -15,7 +16,11 @@ internal sealed class LineConfiguration : IEntityTypeConfiguration<Line>
         builder.HasKey(line => line.Id);
 
         builder.Property(line => line.Id).HasColumnName("id");
-        builder.Property(line => line.Code).HasColumnName("code").IsRequired();
+        // The value object is converted to its stored string, so the column stays unchanged.
+        builder.Property(line => line.Code)
+            .HasColumnName("code")
+            .HasConversion(code => code.Value, value => LineCode.FromStorage(value))
+            .IsRequired();
         builder.Property(line => line.Name).HasColumnName("name").IsRequired();
 
         builder.HasIndex(line => line.Code).IsUnique();

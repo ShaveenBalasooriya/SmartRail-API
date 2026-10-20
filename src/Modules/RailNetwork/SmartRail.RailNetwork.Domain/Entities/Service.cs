@@ -1,4 +1,5 @@
 using SmartRail.SharedKernel.Primitives;
+using SmartRail.SharedKernel.Results;
 
 namespace SmartRail.RailNetwork.Domain.Entities;
 
@@ -12,7 +13,7 @@ public sealed class Service : Entity<Guid>
     {
     }
 
-    public Service(Guid id, Guid lineId, ServiceDirection direction, string name, Guid guardStaffId)
+    private Service(Guid id, Guid lineId, ServiceDirection direction, string name, Guid guardStaffId)
         : base(id)
     {
         LineId = lineId;
@@ -32,4 +33,34 @@ public sealed class Service : Entity<Guid>
     public Line Line { get; private set; } = null!;
 
     public ICollection<ServiceStop> Stops { get; } = [];
+
+    /// <summary>Creates a service. Its identifier is generated with <see cref="Guid.CreateVersion7"/>.</summary>
+    public static Result<Service> Create(
+        Guid lineId,
+        ServiceDirection direction,
+        string name,
+        Guid guardStaffId)
+    {
+        if (lineId == Guid.Empty)
+        {
+            return Result.Failure<Service>(ServiceErrors.LineRequired);
+        }
+
+        if (!Enum.IsDefined(direction))
+        {
+            return Result.Failure<Service>(ServiceErrors.DirectionInvalid);
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return Result.Failure<Service>(ServiceErrors.NameRequired);
+        }
+
+        if (guardStaffId == Guid.Empty)
+        {
+            return Result.Failure<Service>(ServiceErrors.GuardRequired);
+        }
+
+        return new Service(Guid.CreateVersion7(), lineId, direction, name.Trim(), guardStaffId);
+    }
 }
