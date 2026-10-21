@@ -2,6 +2,10 @@
 
 ## Context
 
+> **Superseded by refactor-module-architecture:** four projects per module (Domain, Application,
+> Infrastructure, Api) plus a Contracts project, not three layers; see docs/architecture.md section 2.
+> The text below is the original, kept as built.
+
 The repository is empty apart from a README. `../docs/architecture.md` fixes the architecture: a
 modular monolith of six modules, three layers per module, a PostgreSQL schema per module with no
 cross-schema foreign keys, MediatR for in-process events and Docker Compose
@@ -24,6 +28,10 @@ for local running. This design turns those decisions into a concrete solution la
 ## Decisions
 
 ### D1. Solution layout
+
+> **Superseded by refactor-module-architecture:** four projects per module (Domain, Application,
+> Infrastructure, Api with Carter endpoints) plus a Contracts project, and a Shared Kernel of three
+> projects; see docs/architecture.md section 2. The layout and reference rules below are the original.
 
 ```
 SmartRail-API/
