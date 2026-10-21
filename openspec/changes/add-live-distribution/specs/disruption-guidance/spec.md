@@ -7,11 +7,15 @@ Tells a passenger what to do when something goes wrong, in plain words generated
 ## ADDED Requirements
 
 ### Requirement: Guidance text per disruption type
-A journey with an uncorrected delay, cancellation or platform change SHALL carry a guidance object with a plain-language message chosen from fixed templates for that type, filled with the journey's own values (minutes, new platform, destination); the text SHALL NOT be free-form or AI-generated (M-11, W-16).
+A journey with an uncorrected delay, cancellation, early termination or platform change SHALL carry a guidance object with a plain-language message chosen from fixed templates for that type, filled with the journey's own values (minutes, new platform, destination); the text SHALL NOT be free-form or AI-generated (M-11, W-16).
 
 #### Scenario: Cancellation
 - **WHEN** a journey is cancelled
 - **THEN** the guidance names the cancelled departure and tells the passenger to take the next service
+
+#### Scenario: Early termination [A]
+- **WHEN** a running journey is ended early at stop 3
+- **THEN** the guidance names the last station served, says the train will not call at the stations after it, and tells the passenger to take the next service
 
 #### Scenario: Platform change
 - **WHEN** a platform change is published
@@ -29,7 +33,7 @@ A delay SHALL produce guidance only when the journey is at least five minutes la
 - **THEN** no guidance is attached
 
 ### Requirement: Next service to the same destination
-Guidance for a cancelled journey, and for a delay of 15 minutes or more, SHALL include the next non-cancelled journey from the same origin to the same final destination that departs after the affected one, with its expected departure and platform; when none exists today, guidance SHALL say no later service is scheduled today.
+Guidance for a cancelled or early-terminated journey, and for a delay of 15 minutes or more, SHALL include the next journey that is neither cancelled nor terminated from the same origin to the same final destination that departs after the affected one, with its expected departure and platform; when none exists today, guidance SHALL say no later service is scheduled today.
 
 #### Scenario: Another train follows
 - **WHEN** the 08:00 service is cancelled and a 08:20 service runs the same route

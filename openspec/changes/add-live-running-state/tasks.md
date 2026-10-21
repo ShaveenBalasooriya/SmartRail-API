@@ -11,6 +11,9 @@
 
 ## 3. Fact sink and event stream
 
+> **Superseded by refactor-module-architecture:** `IJourneyFactSink` became the `ApplyJourneyFact`
+> command, sent through MediatR; task 3.1 is kept as built.
+
 - [x] 3.1 Implement `IJourneyFactSink` with the row lock, recompute, change detection and event append; verify one integration test: a fact appends one event with the next sequence number, and a no-op fact appends none
 - [x] 3.2 Publish `JourneyStateChanged` after the sink commits; verify a clean build
 

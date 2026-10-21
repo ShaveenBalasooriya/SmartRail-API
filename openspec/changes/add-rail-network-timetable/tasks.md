@@ -13,5 +13,9 @@
 
 ## 3. Contracts and public endpoints
 
+> **Superseded by refactor-module-architecture:** `SmartRail.RailNetwork.Contracts` holds only the
+> interfaces and DTOs; `INetworkCatalog` and `ITimetable` are implemented in
+> `SmartRail.RailNetwork.Application`. Task 3.1 is kept as built.
+
 - [x] 3.1 Implement `INetworkCatalog` and `ITimetable` in `SmartRail.RailNetwork.Contracts`; verify the build
 - [x] 3.2 Add `GET /network/lines`, `/network/stations`, `/network/stations/{id}` and `/timetable/journeys?date=`; verify by calling them on the running app (empty lists, 404 for an unknown station, 400 for a date outside today and tomorrow)
