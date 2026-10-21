@@ -22,6 +22,10 @@ internal static class TestTokens
     public const string MetadataAddress =
         "http://identity.test:9000/application/o/smartrail-staff/.well-known/openid-configuration";
 
+    /// <summary>The same discovery document over https, for environments that require it.</summary>
+    public const string HttpsMetadataAddress =
+        "https://identity.test/application/o/smartrail-staff/.well-known/openid-configuration";
+
     /// <summary>The claim the whole staff path reads the username from.</summary>
     public const string SubjectClaim = "sub";
 

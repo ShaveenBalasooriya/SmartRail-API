@@ -163,7 +163,12 @@ public sealed class OpenApiDocumentTests(PostgresFixture postgres) : IDisposable
 
         Assert.Contains("\"x-scalar-client-id\":\"smartrail-staff\"", html, StringComparison.Ordinal);
         Assert.Contains("\"x-usePkce\":\"SHA-256\"", html, StringComparison.Ordinal);
-        Assert.Contains("\"x-scalar-redirect-uri\":\"/scalar/\"", html, StringComparison.Ordinal);
+
+        // The flow does not pin a redirect URI. Scalar then defaults it to the page's absolute
+        // origin + pathname, which is http://localhost:5080/scalar/ on the local stack and the
+        // exact URI the Authentik blueprint registers. A pinned "/scalar/" would be sent
+        // unresolved, still relative, in the token exchange.
+        Assert.DoesNotContain("x-scalar-redirect-uri", html, StringComparison.Ordinal);
         Assert.Contains(
             "\"selectedScopes\":[\"openid\",\"profile\",\"offline_access\"]",
             html,
@@ -173,6 +178,23 @@ public sealed class OpenApiDocumentTests(PostgresFixture postgres) : IDisposable
         Assert.DoesNotContain("clientSecret", html, StringComparison.Ordinal);
         Assert.DoesNotContain("srk_", html, StringComparison.Ordinal);
         Assert.DoesNotContain("eyJ", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_scalar_route_redirects_to_the_path_the_default_redirect_uri_uses()
+    {
+        using var client = _factory.CreateApiClient();
+        using var response = await client.GetAsync("/scalar");
+
+        // Scalar's default redirect URI is origin + pathname, so the trailing slash on the page
+        // it redirects to is what makes the URI http://localhost:5080/scalar/.
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        var location = response.Headers.Location;
+
+        Assert.NotNull(location);
+        Assert.Equal(
+            "/scalar/",
+            new Uri(new Uri("http://localhost/scalar"), location).AbsolutePath);
     }
 }
 

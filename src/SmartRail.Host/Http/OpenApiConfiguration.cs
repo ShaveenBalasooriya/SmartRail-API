@@ -120,10 +120,11 @@ public static class OpenApiConfiguration
                 flow.Pkce = Pkce.Sha256;
                 flow.SelectedScopes = OpenApiSecurity.StaffScopes;
 
-                // A relative redirect URI is resolved by Scalar against the page it is served from,
-                // so it is always the Scalar page itself: "<origin>/scalar/" (for the local stack,
-                // http://localhost:5080/scalar/). The Authentik client registers exactly that URI.
-                flow.RedirectUri = $"{ScalarRoute}/";
+                // No redirect URI is pinned. Scalar defaults it to the page's absolute
+                // origin + pathname, which is http://localhost:5080/scalar/ on the local stack:
+                // exactly the URI the Authentik blueprint registers. Pinning the relative
+                // "/scalar/" would be resolved for the authorization request but sent verbatim,
+                // still relative, in the token exchange.
             }))
             .AllowAnonymous();
 

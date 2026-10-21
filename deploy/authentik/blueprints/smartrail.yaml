@@ -15,7 +15,8 @@
 #
 # The app password is the second credential: the client_credentials grant with the client ID,
 # a username and that user's app password is how test automation gets a token without a
-# browser. It is kept for that purpose only.
+# browser. It is kept for that purpose only, and the request must ask for `openid profile`:
+# without a scope the access token carries no `groups`, so the API cannot resolve a role.
 
 version: 1
 
@@ -137,7 +138,7 @@ entries:
   # Public client: a browser cannot keep a secret, so there is no client secret and the
   # authorization code flow is protected by PKCE (S256) instead. Authorization code and
   # refresh token are the interactive grants; client_credentials stays for test automation
-  # with a user's app password (design D10, tasks 7.3).
+  # with a user's app password and the `openid profile` scopes (design D10, tasks 7.3).
   #
   # `profile` is what puts `groups` in the access token, `openid` is required by the spec,
   # and `offline_access` is what makes Authentik issue a refresh token. The issuer is per

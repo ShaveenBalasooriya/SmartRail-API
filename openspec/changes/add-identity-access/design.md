@@ -104,8 +104,10 @@ Scalar, so every token has the same audience. Settings: subject mode username, i
 `openid`, `profile` (puts `groups` in the token) and `offline_access` (refresh tokens) scopes,
 access-token lifetime 15 min. Redirect URIs allow the operations web origin and the Scalar page on the
 local stack. Each seeded user gets a sign-in password and an app password, both from environment
-variables. The app password keeps the client_credentials grant for test automation, if Authentik allows
-it on a public client; otherwise automation gets its own confidential client with the same audience.
+variables. Test automation keeps using client_credentials on this same public client: it sends the
+client ID, a seeded user's username and that user's app password, and requests `openid profile` so the
+access token carries `groups`. Authentik allows that on a public client, so no second client and no
+confidential secret are needed (verified 2026-10-21, task 7.3).
 
 The OpenAPI document declares the staff scheme as OAuth2 authorization code (authorization and token
 URLs from `Authentication:Staff:AuthorizationUrl` and `TokenUrl`, the public Authentik URLs) and an
