@@ -37,6 +37,24 @@ delayCause.
 The app sends queued logs one at a time in tap order. *Alternative:* batch endpoint — rejected for
 MVP 1: partial-success semantics complicate the app for at most a handful of queued items.
 
+### D5. Automatic completion
+`add-live-running-state` D4 leaves "the job that completes journeys" to this change. It is a thin
+`BackgroundService` in `LiveOperations/Infrastructure/Jobs` that, once a minute [A], sends a
+`CompleteFinishedJourneys` command (architecture §2: jobs only send commands). The handler loads the
+`running` journeys and, for each, goes through the existing `ApplyJourneyFact` recompute path with
+event type `journey_completed`: the calculator (D4 of that change) decides whether the journey is now
+`completed`, and the existing change detection appends one event only if the state changed, so a
+repeat tick appends nothing and the event is delivered through the event bus only after commit
+(`add-event-bus`). No new completion logic
+exists outside the calculator. `ApplyJourneyFact` currently takes a fact; a completion has none, so the
+task relaxes that input to an optional fact instead of adding a second recompute path. A departure log
+that itself tips a journey into `completed` (logged after the arrival time) appends its normal
+`departure_logged` event, whose snapshot already shows `completed`; the job then finds nothing to do.
+*Alternative:* complete on a timer per journey — rejected, a periodic scan of at most a handful of
+running journeys is simpler. When the train cannot continue, the Network Controller ends the journey
+early instead (`add-controller-operations` D7); the handler loads only `running` journeys, so a
+`terminated` one is never completed.
+
 ## Risks / Trade-offs
 
 - [A mis-tap can't be undone] → Deferred by scope; the Network Controller's delay or correction tools

@@ -7,7 +7,7 @@ Lets the Network Controller undo a wrongly published change everywhere it went, 
 ## ADDED Requirements
 
 ### Requirement: Correct a published change
-The controller SHALL be able to correct a published delay, cancellation or platform change of one of today's journeys. The correction SHALL be recorded as a new change of type `correction` referencing the original, and the original SHALL remain recorded, unchanged and marked corrected (NC-06, S-12).
+The controller SHALL be able to correct a published delay, cancellation, early termination or platform change of one of today's journeys. The correction SHALL be recorded as a new change of type `correction` referencing the original, and the original SHALL remain recorded, unchanged and marked corrected (NC-06, S-12).
 
 #### Scenario: Wrong cancellation
 - **WHEN** the controller corrects a cancellation
@@ -19,6 +19,10 @@ After a correction, the journey's live state SHALL be what it would be had the o
 #### Scenario: Later change survives
 - **WHEN** platform changes A then B are published on one stop and A is corrected
 - **THEN** the stop shows B's platform
+
+#### Scenario: Wrong early termination [A]
+- **WHEN** an early termination is corrected
+- **THEN** the journey is `running` again with the expected times its departures give
 
 #### Scenario: Corrected delay
 - **WHEN** a 30-minute delay is corrected
