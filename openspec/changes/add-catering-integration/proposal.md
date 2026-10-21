@@ -10,14 +10,15 @@ must be narrow, authenticated and reliable: data it can pull, and changes pushed
 without duplicates, with retries.
 
 Delivers **EP-12**. Stories: CAT-02 to CAT-12 (CAT-01 is in `add-identity-access`). Depends on
-`add-identity-access`, `add-live-running-state` and `add-rail-network-timetable`.
+`add-identity-access`, `add-live-running-state`, `add-rail-network-timetable` and `add-event-bus`
+(the consumer of `JourneyStateChanged`).
 
 ## What Changes
 
 - Provider pull API: stations with platforms, and journeys calling at a station on a date with
   scheduled and expected arrival, platform, status and freshness.
 - Webhook subscription management for the calling provider.
-- Webhook delivery of delay, cancellation, platform-change and correction events: one delivery per
+- Webhook delivery of delay, cancellation, early-termination, platform-change and correction events: one delivery per
   event per subscription, with event ID, per-journey sequence number, retry with backoff and failure
   counting.
 - A simulated provider application, a separate process that registers a webhook, applies events by
@@ -45,10 +46,13 @@ None.
   timeouts (S-17).
 - Multiple providers or a provider administration screen.
 - Departure events — the provider is told about changes, not about each departure.
+- A message broker (NATS JetStream is expected later; owner decision 2026-10-21): deliveries are created by a consumer of the event bus from `add-event-bus`.
 
 ## Impact
 
 - New `catering` schema tables `providers`, `webhook_subscriptions`, `webhook_deliveries`.
+- A bus consumer, `catering.webhook-deliveries`, registered for `JourneyStateChanged` (event delivery:
+  owner decision 2026-10-21, `add-event-bus`).
 - `SmartRail.Catering.Contracts`: `ICateringProviderDirectory` replaces the stub from
   `add-identity-access`.
 - A second runnable project `SmartRail.SimulatedProvider` and its Compose service.

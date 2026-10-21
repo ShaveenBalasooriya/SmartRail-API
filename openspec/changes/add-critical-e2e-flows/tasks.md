@@ -7,7 +7,7 @@
 ## 1. Error tracking and latency metric
 
 - [ ] 1.1 Add Sentry with `SendDefaultPii = false`, a before-send scrubber and a disabled mode when there is no DSN, and register OpenTelemetry metrics with the Sentry exporter (moved here from `init-backend-foundation`); verify the app starts without a DSN, and one unit test that the scrubber removes headers, cookies and the IP
-- [ ] 1.2 Stamp `committedAt` on `JourneyStateChanged` and record `smartrail.publish_latency_ms` (tags `channel`, `event_type`) from the stream writers and the webhook dispatcher; verify on the running stack that a published delay produces a reading per channel (EP-17 Done when)
+- [ ] 1.2 Record `smartrail.publish_latency_ms` (tags `channel`, `event_type`) as `now - recorded_at` of the persisted event, from the stream writers and the webhook dispatcher (D5); verify on the running stack that a published delay produces a reading per channel (EP-17 Done when)
 
 ## 2. End-to-end harness
 

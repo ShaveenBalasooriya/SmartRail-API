@@ -7,7 +7,7 @@ Shows how quickly a published change reaches each channel, so the claim that a c
 ## ADDED Requirements
 
 ### Requirement: Latency recorded per channel
-For every pushed journey event the system SHALL record the elapsed time from the moment the change was committed to the moment it was written to each channel's connection or acknowledged by the provider, labelled by channel (`public_stream`, `guard_stream`, `provider_webhook`) and event type.
+For every pushed journey event the system SHALL record the elapsed time from the moment the event was recorded (its stored `recorded_at`, taken in the transaction that commits the change [A]) to the moment it was written to each channel's connection or acknowledged by the provider, labelled by channel (`public_stream`, `guard_stream`, `provider_webhook`) and event type.
 
 #### Scenario: Delay delivered to a stream
 - **WHEN** a delay event is written to a connected public stream client
@@ -15,7 +15,7 @@ For every pushed journey event the system SHALL record the elapsed time from the
 
 #### Scenario: Provider delivery
 - **WHEN** the provider acknowledges a webhook with 2xx
-- **THEN** a sample for `provider_webhook` is recorded measuring from event commit to acknowledgement
+- **THEN** a sample for `provider_webhook` is recorded measuring from the event's recorded time to acknowledgement, even if the delivery record was created later
 
 ### Requirement: Latency readable for a live change
 The latency of the most recent events SHALL be readable by the operator through the metrics exporter, and SHALL be visible in the error-tracking service's performance view when configured (EP-17 Done when).

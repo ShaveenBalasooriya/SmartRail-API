@@ -48,3 +48,10 @@ Provider endpoints SHALL be subject to the per-key rate limit and refused with H
 #### Scenario: Over the limit
 - **WHEN** the provider exceeds the per-minute limit
 - **THEN** the response is HTTP 429 with `Retry-After`
+
+### Requirement: Only active providers are served
+A valid API key SHALL be refused with HTTP 401 when the provider it was issued to is marked inactive (CAT-01).
+
+#### Scenario: Inactive provider
+- **WHEN** a valid key belongs to a provider marked inactive
+- **THEN** the response is HTTP 401
