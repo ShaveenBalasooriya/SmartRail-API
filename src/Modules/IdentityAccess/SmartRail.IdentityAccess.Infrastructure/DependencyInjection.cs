@@ -2,7 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartRail.IdentityAccess.Application;
+using SmartRail.IdentityAccess.Application.ProviderKeys;
+using SmartRail.IdentityAccess.Application.Staff;
 using SmartRail.IdentityAccess.Infrastructure.Persistence;
+using SmartRail.IdentityAccess.Infrastructure.Repositories;
+using SmartRail.IdentityAccess.Infrastructure.Seeding;
+using SmartRail.SharedKernel.Application.Abstractions;
 
 namespace SmartRail.IdentityAccess.Infrastructure;
 
@@ -33,6 +38,12 @@ public static class DependencyInjection
             .UseNpgsql(connectionString, npgsql => npgsql
                 .MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)
                 .MigrationsHistoryTable("__ef_migrations_history", IdentityDbContext.Schema)));
+
+        services.AddScoped<IStaffMemberRepository, StaffMemberRepository>();
+        services.AddScoped<IProviderApiKeyRepository, ProviderApiKeyRepository>();
+
+        // The Host runs every IModuleSeeder after migrations; this module owns only its own schema.
+        services.AddScoped<IModuleSeeder, IdentitySeeder>();
 
         return services;
     }

@@ -76,6 +76,7 @@ public static class ProblemDetailsConfiguration
         StatusCodes.Status404NotFound => "No resource matches this request.",
         StatusCodes.Status405MethodNotAllowed => "This method is not supported for this resource.",
         StatusCodes.Status415UnsupportedMediaType => "The request body must be application/json.",
+        StatusCodes.Status429TooManyRequests => "Too many requests.",
         _ => "The request could not be completed.",
     };
 

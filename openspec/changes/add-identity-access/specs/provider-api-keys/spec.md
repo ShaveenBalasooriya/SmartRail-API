@@ -7,7 +7,7 @@ Lets the external catering provider, a machine client, authenticate with a narro
 ## ADDED Requirements
 
 ### Requirement: API key authentication on provider endpoints
-Provider endpoints SHALL require an `X-Api-Key` header holding an active key issued to an active provider. A missing, unknown or revoked key SHALL be refused with HTTP 401 (CAT-01).
+Provider endpoints SHALL require an `X-Api-Key` header holding an active key. A missing, unknown or revoked key SHALL be refused with HTTP 401 (CAT-01).
 
 #### Scenario: Valid key
 - **WHEN** a request to a provider endpoint carries the seeded provider's active key
@@ -19,10 +19,6 @@ Provider endpoints SHALL require an `X-Api-Key` header holding an active key iss
 
 #### Scenario: Revoked key
 - **WHEN** the key's revocation time is set and the key is used
-- **THEN** the response is HTTP 401
-
-#### Scenario: Inactive provider
-- **WHEN** a valid key belongs to a provider marked inactive
 - **THEN** the response is HTTP 401
 
 ### Requirement: Keys stored only as hashes

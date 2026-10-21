@@ -3,8 +3,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 namespace SmartRail.Host.Health;
 
 /// <summary>
-/// The readiness checks: the database can be reached and every module's migrations are applied
-/// (service-health spec).
+/// The readiness checks: the database can be reached, every module's migrations are applied and
+/// start-up seeding has finished (service-health spec).
 /// </summary>
 public static class HealthChecks
 {
@@ -19,6 +19,9 @@ public static class HealthChecks
 
     /// <summary>The migrations check's registration name.</summary>
     public const string MigrationsCheckName = "migrations";
+
+    /// <summary>The seeding check's registration name.</summary>
+    public const string SeedingCheckName = "seeding";
 }
 
 /// <summary>
@@ -43,6 +46,22 @@ public sealed class DatabaseHealthCheck(Npgsql.NpgsqlDataSource dataSource) : IH
             // do (service-health spec). It is available to the operator in the log.
             return HealthCheckResult.Unhealthy(description: null, exception: exception);
         }
+    }
+}
+
+/// <summary>
+/// Checks that start-up seeding has finished. Reference data that is missing or half-loaded is not a
+/// ready application, so until the Host has seeded every module, it is not ready.
+/// </summary>
+public sealed class SeedingCompletedHealthCheck(Persistence.DatabaseSeeder seeder) : IHealthCheck
+{
+    public Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(seeder.HasCompleted
+            ? HealthCheckResult.Healthy()
+            : HealthCheckResult.Unhealthy());
     }
 }
 

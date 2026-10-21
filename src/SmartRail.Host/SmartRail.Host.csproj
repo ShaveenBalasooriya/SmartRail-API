@@ -22,6 +22,17 @@
     <ProjectReference Include="../Modules/Audit/SmartRail.Audit.Api/SmartRail.Audit.Api.csproj" />
   </ItemGroup>
 
+  <!--
+    The seed files sit at the repository root so they are reviewable next to the code, and are
+    copied beside the binaries because that is where IModuleSeeder looks (design D9).
+  -->
+  <ItemGroup>
+    <None Include="../../seed/**/*.json"
+          Link="seed/%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Carter" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />

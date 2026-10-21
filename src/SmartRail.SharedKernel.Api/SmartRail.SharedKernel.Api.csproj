@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
