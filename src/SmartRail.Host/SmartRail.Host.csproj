@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
+    <ProjectReference Include="../Modules/IdentityAccess/SmartRail.IdentityAccess.Infrastructure/SmartRail.IdentityAccess.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/IdentityAccess/SmartRail.IdentityAccess.Api/SmartRail.IdentityAccess.Api.csproj" />
+    <ProjectReference Include="../Modules/RailNetwork/SmartRail.RailNetwork.Infrastructure/SmartRail.RailNetwork.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/RailNetwork/SmartRail.RailNetwork.Api/SmartRail.RailNetwork.Api.csproj" />
+    <ProjectReference Include="../Modules/LiveOperations/SmartRail.LiveOperations.Infrastructure/SmartRail.LiveOperations.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/LiveOperations/SmartRail.LiveOperations.Api/SmartRail.LiveOperations.Api.csproj" />
+    <ProjectReference Include="../Modules/Distribution/SmartRail.Distribution.Infrastructure/SmartRail.Distribution.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Distribution/SmartRail.Distribution.Api/SmartRail.Distribution.Api.csproj" />
+    <ProjectReference Include="../Modules/Catering/SmartRail.Catering.Infrastructure/SmartRail.Catering.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Catering/SmartRail.Catering.Api/SmartRail.Catering.Api.csproj" />
+    <ProjectReference Include="../Modules/Audit/SmartRail.Audit.Infrastructure/SmartRail.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Audit/SmartRail.Audit.Api/SmartRail.Audit.Api.csproj" />
+  </ItemGroup>
+
+  <!--
+    The seed files sit at the repository root so they are reviewable next to the code, and are
+    copied beside the binaries because that is where IModuleSeeder looks (design D9).
+  -->
+  <ItemGroup>
+    <None Include="../../seed/**/*.json"
+          Link="seed/%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Carter" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

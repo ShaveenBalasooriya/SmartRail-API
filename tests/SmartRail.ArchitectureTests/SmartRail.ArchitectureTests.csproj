@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../../src/SmartRail.Host/SmartRail.Host.csproj" />
+    <ProjectReference Include="../../src/Contracts/SmartRail.IdentityAccess.Contracts/SmartRail.IdentityAccess.Contracts.csproj" />
+    <ProjectReference Include="../../src/Contracts/SmartRail.RailNetwork.Contracts/SmartRail.RailNetwork.Contracts.csproj" />
+    <ProjectReference Include="../../src/Contracts/SmartRail.LiveOperations.Contracts/SmartRail.LiveOperations.Contracts.csproj" />
+    <ProjectReference Include="../../src/Contracts/SmartRail.Distribution.Contracts/SmartRail.Distribution.Contracts.csproj" />
+    <ProjectReference Include="../../src/Contracts/SmartRail.Catering.Contracts/SmartRail.Catering.Contracts.csproj" />
+    <ProjectReference Include="../../src/Contracts/SmartRail.Audit.Contracts/SmartRail.Audit.Contracts.csproj" />
+    <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Infrastructure/SmartRail.IdentityAccess.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Api/SmartRail.IdentityAccess.Api.csproj" />
+    <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Infrastructure/SmartRail.RailNetwork.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Api/SmartRail.RailNetwork.Api.csproj" />
+    <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Infrastructure/SmartRail.LiveOperations.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Api/SmartRail.LiveOperations.Api.csproj" />
+    <ProjectReference Include="../../src/Modules/Distribution/SmartRail.Distribution.Infrastructure/SmartRail.Distribution.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/Distribution/SmartRail.Distribution.Api/SmartRail.Distribution.Api.csproj" />
+    <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Infrastructure/SmartRail.Catering.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Api/SmartRail.Catering.Api.csproj" />
+    <ProjectReference Include="../../src/Modules/Audit/SmartRail.Audit.Infrastructure/SmartRail.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/Audit/SmartRail.Audit.Api/SmartRail.Audit.Api.csproj" />
+    <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Domain/SmartRail.IdentityAccess.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Application/SmartRail.IdentityAccess.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Domain/SmartRail.RailNetwork.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Application/SmartRail.RailNetwork.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Domain/SmartRail.LiveOperations.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Application/SmartRail.LiveOperations.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Domain/SmartRail.Catering.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Application/SmartRail.Catering.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/Audit/SmartRail.Audit.Domain/SmartRail.Audit.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Audit/SmartRail.Audit.Application/SmartRail.Audit.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/Distribution/SmartRail.Distribution.Application/SmartRail.Distribution.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+  <ItemGroup><Using Include="Xunit" /></ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>
+

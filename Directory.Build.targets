@@ -1,0 +1,13 @@
+<Project>
+
+  <!--
+    Test-only relaxations. This file is imported after the project body, so IsTestProject (set in
+    the test csproj) is known here. Naming a test after the behaviour it asserts is the convention
+    xUnit tests are read by, and it trips CA1707, which exists for public library API.
+  -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1707;CA1861;CA1866;CA1305;CA2234;CA1054;CA1056;xUnit1051;xUnit2013;xUnit2031;CA1852;CA1515;CA1711;CA1001</NoWarn>
+  </PropertyGroup>
+
+</Project>

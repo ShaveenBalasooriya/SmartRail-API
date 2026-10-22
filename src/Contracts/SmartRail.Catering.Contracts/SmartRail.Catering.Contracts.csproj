@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>
+

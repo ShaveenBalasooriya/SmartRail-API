@@ -1,0 +1,28 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <Deterministic>true</Deterministic>
+    <!--
+      CA1515: the API surface of these projects is public by design (module boundaries are
+              expressed through public types and interfaces).
+      CA1848/CA2007/CA1031/CA1303/CA1062/CA1812: noise for a code base that uses the built-in
+              logger and top-level handlers; none of them affect the behaviour under test.
+    -->
+    <NoWarn>$(NoWarn);CA1515;CA1848;CA2007;CA1031;CA1303;CA1062;CA1812;CA1852;CA1716;CA1873</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

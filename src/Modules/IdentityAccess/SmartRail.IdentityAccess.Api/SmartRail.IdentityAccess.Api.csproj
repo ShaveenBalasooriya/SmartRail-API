@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SmartRail.IdentityAccess.Application/SmartRail.IdentityAccess.Application.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.IdentityAccess.Contracts/SmartRail.IdentityAccess.Contracts.csproj" />
+    <ProjectReference Include="../../../SmartRail.SharedKernel.Api/SmartRail.SharedKernel.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Carter" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>
