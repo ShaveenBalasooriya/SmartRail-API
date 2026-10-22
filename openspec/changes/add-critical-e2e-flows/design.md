@@ -39,8 +39,11 @@ compose logs on failure, `docker compose down -v`. Triggered by pull requests in
 on; it is not part of this change.
 
 ### D5. Latency metric
-At event commit the unit of work stamps `committedAt` (taken from `TimeProvider`) on the
-`JourneyStateChanged` notification. The stream writer records `now - committedAt` into an
+The start time is the persisted event's own `recorded_at` (written in the event's transaction from
+`TimeProvider`), not a stamp on the `JourneyStateChanged` message: the event bus delivers at least once and
+may deliver late or after a retry (owner decision 2026-10-21, `add-event-bus`), so a consumer that
+receives it later is still measured from when the change was made [A]. The stream writer
+records `now - recorded_at` into an
 OpenTelemetry `Histogram<double>` `smartrail.publish_latency_ms` tagged `channel` and `event_type`
 after the frame is flushed; the webhook dispatcher records it on a 2xx. Exported through the Sentry
 exporter registered by this change (task 1.1): `Sentry.AspNetCore` with `SendDefaultPii = false`, a

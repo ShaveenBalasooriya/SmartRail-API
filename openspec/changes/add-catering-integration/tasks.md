@@ -10,9 +10,9 @@
 
 - [ ] 2.1 Add `PUT/GET/DELETE /provider/webhook` with URL validation and one-per-provider replacement; verify by registering, reading and replacing a URL on the running app
 
-## 3. Outbox and dispatcher
+## 3. Delivery records and dispatcher
 
-- [ ] 3.1 Add the in-transaction outbox handler for delay, cancellation, platform change and correction; verify one integration test: a published cancellation creates one delivery row per active subscription, and a departure creates none
+- [ ] 3.1 Add the `catering.webhook-deliveries` consumer of `JourneyStateChanged` (D1): it loads the event through `ILiveJourneys` and, for delay, cancellation, early termination, platform change and correction, inserts one delivery row per active subscription (`ON CONFLICT DO NOTHING`); verify one integration test: a published cancellation creates one delivery row per active subscription, a departure creates none, and the same message delivered twice still leaves one row
 - [ ] 3.2 Add the dispatcher (skip-locked polling, per-journey ordering, 10 s timeout, backoff table, abandon after five); verify one integration test against a stub receiver: fail-then-succeed is delivered, and a later event for the same journey waits for the earlier one
 - [ ] 3.3 Add the payload contract and the delivery metrics counters; verify a clean build
 

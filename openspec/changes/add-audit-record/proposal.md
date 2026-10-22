@@ -7,14 +7,14 @@ their lanes (`../docs/user-journeys/06-auditor.md`). Every staff state change an
 must land in an append-only, tamper-evident record with no passenger data (M-03), and the "Separation
 of duties denials" and "Wrong cancellation corrected" end-to-end flows both end in this record.
 
-Delivers **EP-03**. Stories: AUD-01 to AUD-07; the audit half of NC-08, GRD-09.
+Delivers **EP-03**. Stories: AUD-01 to AUD-07; the audit half of NC-08, GRD-09. Depends on `add-identity-access` and `add-event-bus` (denials arrive as a bus event).
 
 ## What Changes
 
 - An `audit.entries` table, append-only at the database level, with one global hash chain.
 - An audit port (contract) other modules call to record a state change inside the same transaction
   as the change itself.
-- A handler that records every `AccessDenied` notification from Identity.
+- A consumer that records every `AccessDenied` event that Identity publishes through the event bus.
 - Auditor endpoints: filtered, paginated list; entry detail with the link to a related entry; chain
   integrity check.
 
@@ -36,6 +36,8 @@ None.
 - Recording denied reads (only denied writes are recorded, per `role-based-access`).
 - Retention and purge (EP-14 Out).
 - The individual actions that write audit entries — each later change records its own.
+- Sending staff state changes through the event bus (planned later by the owner, option Y in design D1); in
+  MVP 1 they commit with the change through the shared request transaction.
 
 ## Impact
 

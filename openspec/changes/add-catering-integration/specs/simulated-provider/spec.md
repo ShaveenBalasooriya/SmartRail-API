@@ -38,6 +38,13 @@ A cancellation event SHALL mark the journey cancelled on the kitchen screen, and
 - **WHEN** a cancellation and then its correction arrive
 - **THEN** the journey shows as running normally again
 
+### Requirement: Early termination [A]
+A termination event SHALL mark the journey terminated after the named stop on the kitchen screen, with no expected arrivals at the stops after it; a correction referencing it SHALL restore the journey like any other (CAT-05, CAT-09).
+
+#### Scenario: Train ends early
+- **WHEN** a termination event for stop 3 arrives
+- **THEN** the journey shows as terminated after stop 3 and stops after it have no expected arrival
+
 ### Requirement: Kitchen screen
 The simulated provider SHALL show its journeys with expected arrival, platform and status, and a log of received events with whether each was applied, ignored as duplicate or recorded as out of order, updating without a page reload (CAT-12).
 

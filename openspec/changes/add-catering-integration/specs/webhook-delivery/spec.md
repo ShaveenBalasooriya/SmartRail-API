@@ -7,7 +7,7 @@ Pushes each railway change to the provider reliably — in order, without duplic
 ## ADDED Requirements
 
 ### Requirement: Pushed event types
-SmartRail SHALL push delay, cancellation, platform-change and correction events to every active subscription; departure events and journey-completed events SHALL NOT be pushed (CAT-05, CAT-09).
+SmartRail SHALL push delay, cancellation, early-termination, platform-change and correction events to every active subscription, because the provider must learn that a train will not reach its later stations (CAT-05, CAT-09; early termination by owner decision 2026-10-21, [A]); departure events and journey-completed events SHALL NOT be pushed.
 
 #### Scenario: Departure logged
 - **WHEN** a guard logs a departure
@@ -16,6 +16,10 @@ SmartRail SHALL push delay, cancellation, platform-change and correction events 
 #### Scenario: Cancellation published
 - **WHEN** the controller cancels a journey
 - **THEN** one delivery is created for each active subscription
+
+#### Scenario: Early termination published [A]
+- **WHEN** the controller ends a running journey early
+- **THEN** one delivery is created for each active subscription, naming the last stop served in `stopSequence`
 
 ### Requirement: Event payload
 Each delivery SHALL be an HTTP POST of JSON carrying the event ID, the per-journey sequence number, the event type, the journey, the stop where relevant, the new values, the published time, the provenance label, and for a correction the original event's ID (CAT-05, CAT-09).
@@ -29,17 +33,21 @@ Each delivery SHALL be an HTTP POST of JSON carrying the event ID, the per-journ
 - **THEN** the payload carries the original event's ID
 
 ### Requirement: Persisted before sending
-A delivery SHALL be recorded in the database in the same transaction as the event that causes it, and sent afterwards, so no committed change is lost if SmartRail restarts before sending.
+Every committed event of a pushed type SHALL eventually result in a delivery record for each active subscription, even across a restart, and the record SHALL exist in the database before the delivery is sent, so no committed change is lost (owner decision 2026-10-21, `../docs/architecture.md` §3; CAT-05). A Catering consumer of the event bus creates the records, so a record may appear a moment after the commit [A].
 
 #### Scenario: Restart before send
 - **WHEN** the application restarts with pending deliveries
 - **THEN** they are sent after start-up
 
-### Requirement: One delivery per event per subscription
-There SHALL be at most one delivery record per event per subscription, however many times the event is announced (CAT-06).
+#### Scenario: Restart before the delivery record exists [A]
+- **WHEN** an event commits and the application restarts before its delivery record is created
+- **THEN** after start-up the bus delivers the event again, the record is created and the delivery is sent
 
-#### Scenario: Event announced twice
-- **WHEN** the same event is announced twice internally
+### Requirement: One delivery per event per subscription
+There SHALL be at most one delivery record per event per subscription, however many times the event is delivered to the consumer (CAT-06).
+
+#### Scenario: Event delivered twice
+- **WHEN** the bus delivers the same event to the Catering consumer twice, for example after a restart
 - **THEN** one delivery record exists
 
 ### Requirement: Retry with backoff

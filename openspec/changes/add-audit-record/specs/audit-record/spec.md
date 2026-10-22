@@ -21,11 +21,15 @@ A state change SHALL NOT be committed without its audit entry, and an audit entr
 - **THEN** the status change is not committed and the request fails with HTTP 500
 
 ### Requirement: Denied write attempts are recorded
-Every access-denied notification SHALL produce one audit entry with outcome `denied`, the staff ID when known, the role, the attempted action and the server time (AUD-04, NC-08, GRD-09).
+Every access-denied event published by Identity SHALL eventually produce exactly one audit entry with outcome `denied`, the staff ID when known, the role, the attempted action and the time of the denial (AUD-04, NC-08, GRD-09). The entry is written by a consumer of the event bus, so it appears shortly after the denial and not in the same instant, and a denial is not lost if the audit write fails at that moment (owner decision 2026-10-21, `add-event-bus`) [A].
 
 #### Scenario: Guard tries to publish
 - **WHEN** a Guard token is refused on the publish-delay endpoint
-- **THEN** an entry with outcome `denied`, role `guard` and the attempted action appears in the record
+- **THEN** an entry with outcome `denied`, role `guard` and the attempted action appears in the record within a few seconds
+
+#### Scenario: Audit write fails at first [A]
+- **WHEN** the audit write for a denial fails once
+- **THEN** the denial is retried and exactly one entry appears
 
 ### Requirement: Append-only record
 No role and no application path SHALL update or delete an audit entry; the database itself SHALL refuse updates and deletes on audit entries from the application's database account (ADM-06 carried, AUD-06).
