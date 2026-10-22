@@ -1,4 +1,6 @@
+using SmartRail.RailNetwork.Domain.Abstractions;
 using SmartRail.SharedKernel.Primitives;
+using SmartRail.SharedKernel.Results;
 
 namespace SmartRail.RailNetwork.Domain.Entities;
 
@@ -12,7 +14,7 @@ public sealed class Journey : Entity<Guid>
     {
     }
 
-    public Journey(
+    private Journey(
         Guid id,
         Guid serviceId,
         DateOnly serviceDate,
@@ -36,4 +38,32 @@ public sealed class Journey : Entity<Guid>
     public DateTimeOffset CreatedAt { get; private set; }
 
     public Service Service { get; private set; } = null!;
+
+    /// <summary>
+    /// Creates a journey for one service on one railway calendar day. Its scheduled departure is the
+    /// first stop's local departure converted to a UTC instant through the clock, and its identifier
+    /// is generated with <see cref="Guid.CreateVersion7"/>.
+    /// </summary>
+    public static Result<Journey> Create(Service service, DateOnly serviceDate, IRailwayClock clock)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(clock);
+
+        var firstDeparture = service.Stops
+            .OrderBy(stop => stop.Sequence)
+            .Select(stop => stop.ScheduledDeparture)
+            .FirstOrDefault();
+
+        if (firstDeparture is not { } departure)
+        {
+            return Result.Failure<Journey>(JourneyErrors.FirstStopDepartureRequired);
+        }
+
+        return new Journey(
+            Guid.CreateVersion7(),
+            service.Id,
+            serviceDate,
+            clock.ToUtc(serviceDate, departure),
+            clock.UtcNow);
+    }
 }

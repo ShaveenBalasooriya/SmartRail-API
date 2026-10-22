@@ -10,11 +10,17 @@
     <ProjectReference Include="../../src/Contracts/SmartRail.Catering.Contracts/SmartRail.Catering.Contracts.csproj" />
     <ProjectReference Include="../../src/Contracts/SmartRail.Audit.Contracts/SmartRail.Audit.Contracts.csproj" />
     <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Infrastructure/SmartRail.IdentityAccess.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Api/SmartRail.IdentityAccess.Api.csproj" />
     <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Infrastructure/SmartRail.RailNetwork.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Api/SmartRail.RailNetwork.Api.csproj" />
     <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Infrastructure/SmartRail.LiveOperations.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Api/SmartRail.LiveOperations.Api.csproj" />
     <ProjectReference Include="../../src/Modules/Distribution/SmartRail.Distribution.Infrastructure/SmartRail.Distribution.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/Distribution/SmartRail.Distribution.Api/SmartRail.Distribution.Api.csproj" />
     <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Infrastructure/SmartRail.Catering.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Api/SmartRail.Catering.Api.csproj" />
     <ProjectReference Include="../../src/Modules/Audit/SmartRail.Audit.Infrastructure/SmartRail.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Modules/Audit/SmartRail.Audit.Api/SmartRail.Audit.Api.csproj" />
     <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Domain/SmartRail.IdentityAccess.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/IdentityAccess/SmartRail.IdentityAccess.Application/SmartRail.IdentityAccess.Application.csproj" />
     <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Domain/SmartRail.RailNetwork.Domain.csproj" />

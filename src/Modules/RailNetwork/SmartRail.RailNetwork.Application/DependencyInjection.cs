@@ -1,36 +1,26 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SmartRail.RailNetwork.Application.Clock;
+using SmartRail.RailNetwork.Application.Network;
+using SmartRail.RailNetwork.Application.Timetable;
+using SmartRail.RailNetwork.Contracts;
 
 namespace SmartRail.RailNetwork.Application;
 
 /// <summary>
-/// The RailNetwork application layer's registration point. The module's Infrastructure
-/// registration calls this; the Host never reaches into the application layer itself.
+/// The Rail Network application layer's registration point. The Host never reaches into the
+/// application layer itself; the module's Infrastructure registration calls this.
 /// </summary>
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registers the application services. <see cref="TimeProvider"/> must already be registered;
-    /// the Host registers the system clock.
+    /// Registers the implementations of the module's public contracts. Handlers and validators are
+    /// registered once by the Host, over this assembly (design D2).
     /// </summary>
-    public static IServiceCollection AddRailNetworkApplication(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddRailNetworkApplication(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
 
-        var configuredTimeZoneId = configuration["Railway:TimeZone"];
-        var timeZoneId = string.IsNullOrWhiteSpace(configuredTimeZoneId)
-            ? RailwayClock.DefaultTimeZoneId
-            : configuredTimeZoneId;
-
-        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-
-        services.AddSingleton(provider => new RailwayClock(
-            provider.GetRequiredService<TimeProvider>(),
-            timeZone));
+        services.AddScoped<INetworkCatalog, NetworkCatalogService>();
+        services.AddScoped<ITimetable, TimetableService>();
 
         return services;
     }

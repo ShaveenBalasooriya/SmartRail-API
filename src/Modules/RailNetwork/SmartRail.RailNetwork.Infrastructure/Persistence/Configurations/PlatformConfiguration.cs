@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SmartRail.RailNetwork.Domain.Entities;
+using SmartRail.RailNetwork.Domain.ValueObjects;
 
 namespace SmartRail.RailNetwork.Infrastructure.Persistence.Configurations;
 
@@ -16,7 +17,11 @@ internal sealed class PlatformConfiguration : IEntityTypeConfiguration<Platform>
 
         builder.Property(platform => platform.Id).HasColumnName("id");
         builder.Property(platform => platform.StationId).HasColumnName("station_id");
-        builder.Property(platform => platform.Number).HasColumnName("number").IsRequired();
+        // The value object is converted to its stored string, so the column stays unchanged.
+        builder.Property(platform => platform.Number)
+            .HasColumnName("number")
+            .HasConversion(number => number.Value, value => PlatformNumber.FromStorage(value))
+            .IsRequired();
 
         builder.HasIndex(platform => new { platform.StationId, platform.Number }).IsUnique();
 

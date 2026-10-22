@@ -2,6 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="../SmartRail.IdentityAccess.Domain/SmartRail.IdentityAccess.Domain.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../../../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
     <ProjectReference Include="../../../Contracts/SmartRail.IdentityAccess.Contracts/SmartRail.IdentityAccess.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>

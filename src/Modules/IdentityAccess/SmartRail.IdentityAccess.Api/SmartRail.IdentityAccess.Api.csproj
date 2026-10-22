@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../SmartRail.IdentityAccess.Application/SmartRail.IdentityAccess.Application.csproj" />
+    <ProjectReference Include="../../../SmartRail.SharedKernel.Api/SmartRail.SharedKernel.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Carter" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>
