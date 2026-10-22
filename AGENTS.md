@@ -102,10 +102,10 @@ microservices. Each module is **Clean Architecture with a CQRS pipeline**, in fo
 | Project | Contains | References |
 |---|---|---|
 | **Domain** | Entities with behaviour, value objects, `<Entity>Errors`, pure domain services | Shared Kernel only |
-| **Application** | Vertical slices `<Feature>/<UseCase>/` (command or query, handler, validator); the feature's repository interface and response DTOs at the feature root; `Abstractions/` (`IUnitOfWork`, other ports); the implementations of the module's contract interfaces; handlers for other modules' events | Domain, Shared Kernel Application, Contracts |
+| **Application** | Vertical slices `<Feature>/<UseCase>/` (command or query, handler, validator); the feature's repository interface and response DTOs at the feature root; `Abstractions/` (`IUnitOfWork`, other ports); the implementations of the module's contract interfaces; consumers (`IEventConsumer<TEvent>`) of other modules' events | Domain, Shared Kernel Application, Contracts |
 | **Infrastructure** | `Persistence/` (the `DbContext`, which implements `IUnitOfWork`; `Configurations/`; `Migrations/`), `Repositories/`, `Jobs/` (background services), external HTTP clients | Application |
 | **Api** | Carter modules per feature (`ICarterModule`) and their request DTOs | Application, Shared Kernel Api |
-| **Contracts** | Integration events (`INotification`), query contract interfaces, their DTOs | Shared Kernel, MediatR contracts |
+| **Contracts** | Integration events (plain records published through the event bus), query contract interfaces, their DTOs | Shared Kernel, MediatR contracts |
 
 Rules:
 
@@ -125,7 +125,8 @@ Rules:
 - **Persistence goes through repositories and `IUnitOfWork`.** Raw SQL (`ON CONFLICT`, `FOR UPDATE`)
   is allowed only inside a repository method.
 - **Background jobs only send commands**; the work is in the handler.
-- **Integration events are published after `IUnitOfWork.SaveChangesAsync` commits**, never before.
+- **Integration events are saved as an outbox row with the change in `IUnitOfWork.SaveChangesAsync`
+  and delivered only after it commits**, never published directly with MediatR.
 - Each layer exposes one extension: `Add<Module>Application()`, `Add<Module>Infrastructure(configuration)`,
   `Add<Module>Api()`.
 
@@ -146,7 +147,8 @@ own Api project. An endpoint maps the request to a command or query, sends it an
 
 Plus two cross-cutting pieces:
 
-- **Shared Kernel**, three projects with no business logic: `SmartRail.SharedKernel` (`Entity`,
+- **Shared Kernel**, three projects with no business logic (a fourth, `SmartRail.SharedKernel.Infrastructure`,
+  holds the event bus once `add-event-bus` lands): `SmartRail.SharedKernel` (`Entity`,
   `ValueObject`, `IDomainEvent`, `Result`, `Error`, `ErrorType`, `ValidationResult`, pagination;
   depends on nothing), `SmartRail.SharedKernel.Application` (CQRS interfaces and the pipeline
   behaviours) and `SmartRail.SharedKernel.Api` (`ToProblemDetails`).
@@ -157,8 +159,15 @@ Plus two cross-cutting pieces:
 ### How modules talk
 
 - **Never** query another module's tables.
-- **"Something happened"** → an in-process event via **MediatR**; interested modules register their
-  own `INotificationHandler`.
+- **"Something happened" inside a module** → an in-process event via **MediatR**; interested handlers
+  register as `INotificationHandler`.
+- **"Something happened" for other modules** → an integration event published through
+  `IIntegrationEventPublisher`, which saves an outbox row in the publishing module's own schema in the
+  change's transaction; a dispatcher delivers it at least once to each module's `IEventConsumer<TEvent>`,
+  in order per ordering key. There is no message broker in MVP 1 (owner decision 2026-10-21; NATS
+  JetStream is expected later as a transport swap; `../docs/architecture.md` §3 "Event delivery";
+  `add-event-bus`). Audit entries for staff state changes are the one exception: they commit in the
+  change's own transaction.
 - **"What is the current state of X"** → a call to the owning module's **in-process query contract**
   (an interface in its Contracts project, implemented in its Application layer by sending the module's
   own query, resolved from DI).
@@ -178,6 +187,9 @@ Plus two cross-cutting pieces:
   credential.
 - **RBAC lives in SmartRail**, not in Authentik. Authentik answers "who is this"; this codebase
   answers "what may they do, and can that be proven".
+- A staff member's **role is assigned as an Authentik group** (`network_controller`, `guard`,
+  `auditor`) and read from the token's `groups` claim; a token naming none or more than one has no
+  role. Handlers get the caller through the `ICurrentUser` port in `SmartRail.SharedKernel.Application`.
 - In MVP 1 only the **staff** client exists. Staff accounts are seed data in an Authentik
   **blueprint**. The passenger app and station display call public endpoints with no token.
 - The catering provider authenticates with an **API key**; only a hash is stored.

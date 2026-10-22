@@ -10,20 +10,29 @@ context: |
   disagreement must be raised with the owner.
   MVP 1 roles: Network Controller, Guard and Auditor (staff, seeded accounts); anonymous passengers;
   one catering provider as a machine client with an API key. Scheduler, Driver, System Admin,
-  passenger accounts, notices to crew, skipped-stop and early-termination changes are deferred and
-  must not be built.
+  passenger accounts, notices to crew and skipped-stop changes are deferred and must not be built.
+  Early termination is in MVP 1 (owner decision 2026-10-21), limited to the Network Controller ending
+  a running journey that cannot continue.
   Stack: .NET 10, ASP.NET Core Minimal APIs (no MVC controllers), PostgreSQL, EF Core, MediatR,
   Server-Sent Events, Authentik (OIDC) for staff identity, Sentry, Docker Compose, xUnit and
   Testcontainers.
   Architecture: modular monolith with six modules (Identity & Access, Rail Network, Live Operations,
-  Distribution, Catering Integration, Audit). Each module has Domain, Application and
-  Infrastructure & Endpoints layers, and Domain and Application never reference EF Core, HTTP or
-  Authentik. Each module that keeps data owns one PostgreSQL schema and one DbContext. No foreign key
-  and no query crosses a schema boundary; modules interact only through MediatR notifications and
-  in-process query contracts.
-  Authorisation decisions are made by SmartRail from its own staff records, never from roles in
-  Authentik tokens. No passenger personal data, token, API key or client IP address is ever written
-  to a log or to the audit record.
+  Distribution, Catering Integration, Audit). Each module has four projects, Domain, Application,
+  Infrastructure and Api (Carter endpoints), plus a Contracts project for its public events and
+  query interfaces (docs/architecture.md section 2). Domain and Application never reference EF Core,
+  HTTP or Authentik, and Api never references Infrastructure. The Shared Kernel is three projects
+  (SharedKernel, SharedKernel.Application, SharedKernel.Api), plus SharedKernel.Infrastructure for the
+  event bus once add-event-bus lands. Each module that keeps data owns one
+  PostgreSQL schema and one DbContext. No foreign key and no query crosses a schema boundary;
+  modules interact only through in-process query contracts, MediatR notifications inside a module,
+  and the event bus for cross-module events (owner decision 2026-10-21): a publisher saves an outbox row
+  in its own schema with the change, a dispatcher delivers it at least once to consumers, and there is no
+  message broker in MVP 1 (NATS JetStream is expected later as a transport swap; add-event-bus).
+  A staff member's role is assigned as an Authentik group and read from the token's groups claim
+  (exactly one of network_controller, guard, auditor; none or several means no role). SmartRail still
+  owns the role catalogue, the role check on every endpoint, the seeded staff record and the audited
+  denial event (docs/architecture.md section 5). No passenger personal data, token, API key or
+  client IP address is ever written to a log or to the audit record.
   Workflow: stacked pull requests with Graphite, trunk dev; main only receives promotions from dev.
 
 rules:

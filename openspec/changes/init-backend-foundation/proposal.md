@@ -13,6 +13,9 @@ delivered later, by `add-live-running-state` and `add-live-distribution`, where 
 
 ## What Changes
 
+> **Superseded by refactor-module-architecture:** four projects per module (Domain, Application,
+> Infrastructure, Api) plus a Contracts project, not three layers; see docs/architecture.md section 2.
+
 - A .NET 10 solution containing the Host (the composition root), a Shared Kernel and six empty module
   skeletons, each with Domain, Application, and Infrastructure & Endpoints projects.
 - PostgreSQL wiring: one EF Core `DbContext` per module that keeps data, each limited to its own
