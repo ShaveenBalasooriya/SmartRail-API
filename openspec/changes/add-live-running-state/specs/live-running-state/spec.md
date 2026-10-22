@@ -13,6 +13,10 @@ When a journey is announced, the system SHALL create its live state with lifecyc
 - **WHEN** a journey is generated and announced
 - **THEN** its live state exists with status `scheduled` and expected times equal to scheduled times
 
+#### Scenario: Announcement lost
+- **WHEN** the application starts and a journey exists without live state
+- **THEN** its live state is created from the timetable
+
 ### Requirement: State derived only from recorded facts
 A journey's live state SHALL be a deterministic function of its baseline, its recorded departures and its published changes that have not been corrected. Recomputing from the same facts SHALL give the same state, and a corrected change SHALL affect the state as if it had never been published (S-12, NC-06).
 
@@ -75,8 +79,8 @@ A journey SHALL be `scheduled` until its first departure is recorded, then `runn
 - **THEN** its status becomes `running`
 
 #### Scenario: Arrival time passes
-- **WHEN** a journey has departed its penultimate calling stop and the clock passes its expected arrival at the terminus
-- **THEN** its status becomes `completed` within one minute
+- **WHEN** the state of a journey that has departed its penultimate calling stop is computed after its expected arrival at the terminus
+- **THEN** its status is `completed`
 
 #### Scenario: Never departed
 - **WHEN** no departure is ever recorded for a journey
@@ -97,8 +101,8 @@ Each journey SHALL carry a last-updated time equal to the server time at which t
 - **THEN** the journey's last-updated time is 08:20
 
 ### Requirement: Live state readable by other modules
-Live state SHALL be readable through an in-process query contract: one journey with its stops; journeys by date; and journeys calling at a station within a time window (architecture §3).
+Live state SHALL be readable through an in-process query contract: one journey with its stops, and journeys by date (architecture §3).
 
-#### Scenario: Station query
-- **WHEN** another module asks for today's journeys calling at a station after 08:00
-- **THEN** it receives each such journey with its live stop data, ordered by expected departure from that station
+#### Scenario: Journeys by date
+- **WHEN** another module asks for today's journeys
+- **THEN** it receives each journey with its live stop data, ordered by scheduled departure

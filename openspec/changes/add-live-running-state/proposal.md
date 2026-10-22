@@ -11,20 +11,19 @@ channel receives the same sequence (EP-01 domain event log, EP-07).
 Delivers **EP-07** and the domain event log of **EP-01**. Stories: NC-01 (data), NC-07, PAX-04,
 PAX-14, CAT-07 (sequence numbers), GRD-07 (progress from original timestamps).
 
-Depends on `add-rail-network-timetable` (journey announcements) and `add-audit-record` (shared unit of
-work). Departure logs arrive with `add-departure-logging`; status changes with
+Depends on `add-rail-network-timetable` (journey announcements). Departure logs arrive with `add-departure-logging`; status changes with
 `add-controller-operations` — this change defines how they affect the state.
 
 ## What Changes
 
-- Live state per journey created from each journey announcement, with the timetable baseline, in
-  the same transaction as the journey itself.
+- Live state per journey created from each journey announcement, with the timetable baseline, and
+  created at start-up for any journey that lacks it (the announcement is not transactional with the
+  journey insert).
 - One deterministic rule set that computes lifecycle status, actual and expected times, minutes early
   or late, last and next station, current platform per stop and freshness from the facts recorded so
   far — recomputed from scratch whenever a fact is added, so a correction simply removes a fact.
-- Automatic completion of running journeys.
 - The `journey_events` stream: every change to a journey's state appends one event with a gap-free
-  per-journey sequence number and a global stream position, and is announced after commit.
+  per-journey sequence number and a global stream position, and is announced once it is saved.
 - An in-process query contract for live state used by Distribution, Catering and the operations
   endpoints.
 
@@ -48,6 +47,8 @@ None.
 - Delivering events to clients (`add-live-distribution`) or the provider (`add-catering-integration`).
 - Predictive arrival estimates, recovery of lost time, GPS or crew-device location (EP-07 Out).
 - Skipped stops and early termination (deferred).
+- The background job that completes journeys (`add-departure-logging`), a post-commit publisher for a
+  wider unit of work, the audit record, and the by-station query (`add-live-distribution`).
 
 ## Impact
 

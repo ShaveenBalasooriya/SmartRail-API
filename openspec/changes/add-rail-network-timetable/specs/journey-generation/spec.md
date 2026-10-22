@@ -10,7 +10,7 @@ Turns the timetable into dated operational journeys — the daily instances pass
 The system SHALL ensure that, for every service, one operational journey exists for today and one for tomorrow, where days are calendar days in the railway's configured time zone. Generation SHALL run at start-up and again periodically, so a new day's journeys appear within an hour of local midnight.
 
 #### Scenario: Fresh start
-- **WHEN** the application starts against a seeded database with no journeys
+- **WHEN** the application starts against a database with services and no journeys
 - **THEN** each service has a journey dated today and one dated tomorrow
 
 #### Scenario: Day rolls over
@@ -32,11 +32,11 @@ Each journey SHALL record its date and the UTC instant of its first stop's sched
 - **THEN** its journey's scheduled departure instant is 02:00Z on that date
 
 ### Requirement: New journeys are announced
-Each newly created journey SHALL be announced once to other modules with its ID, service, date and full stop baseline (scheduled UTC times, calling flags, platforms) and its guard, so Live Operations can create its live state (architecture §3).
+Each newly created journey SHALL be announced once to other modules (it has no subscriber until Live Operations is built) with its ID, service, date and full stop baseline (scheduled UTC times, calling flags, platforms) and its guard, so Live Operations can create its live state (architecture §3).
 
-#### Scenario: Live state created
+#### Scenario: Announcement published
 - **WHEN** a journey is generated
-- **THEN** Live Operations receives exactly one announcement for it
+- **THEN** exactly one announcement is published for it
 
 #### Scenario: Generation re-run
 - **WHEN** generation runs again and finds the journey already exists
@@ -48,6 +48,10 @@ The system SHALL provide an anonymous endpoint returning the scheduled journeys 
 #### Scenario: Today's journeys
 - **WHEN** a client requests the scheduled journeys for today
 - **THEN** every service's journey for today is returned in scheduled-departure order
+
+#### Scenario: No services
+- **WHEN** the database holds no services
+- **THEN** generation creates nothing and the application still starts
 
 #### Scenario: Date out of range
 - **WHEN** a client requests journeys for a date next week

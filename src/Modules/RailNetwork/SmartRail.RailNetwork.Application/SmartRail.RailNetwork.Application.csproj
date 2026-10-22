@@ -6,6 +6,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MediatR" />
+    <!-- The application layer reads Railway:TimeZone. VersionOverride keeps the version in step
+         with the .NET runtime without touching the repository-wide package list. -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" VersionOverride="10.0.0" />
   </ItemGroup>
 </Project>
 
