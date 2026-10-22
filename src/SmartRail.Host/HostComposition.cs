@@ -49,7 +49,7 @@ public static class HostComposition
 
         services.AddSmartRailProblemDetails();
         services.AddSmartRailCors(configuration);
-        services.AddSmartRailOpenApi();
+        services.AddSmartRailOpenApi(configuration, environment);
 
         // Records the matched route template on the request before the HTTP-method policy can
         // replace it with the pattern-less 405 rejection endpoint (diagnostic-logging spec).
@@ -86,7 +86,7 @@ public static class HostComposition
         services.AddCateringInfrastructure(configuration);
         services.AddAuditInfrastructure(configuration);
 
-        services.AddIdentityAccessApi();
+        services.AddIdentityAccessApi(configuration, environment);
         services.AddRailNetworkApi();
         services.AddLiveOperationsApi();
         services.AddDistributionApi();
@@ -95,6 +95,7 @@ public static class HostComposition
 
         services.AddModuleDatabases();
         services.AddSingleton<DatabaseMigrator>();
+        services.AddSingleton<DatabaseSeeder>();
 
         services.AddSmartRailHealthChecks(configuration);
 
@@ -166,6 +167,10 @@ public static class HostComposition
                 tags: [HealthChecks.ReadyTag])
             .AddCheck<MigrationsAppliedHealthCheck>(
                 HealthChecks.MigrationsCheckName,
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
+                tags: [HealthChecks.ReadyTag])
+            .AddCheck<SeedingCompletedHealthCheck>(
+                HealthChecks.SeedingCheckName,
                 failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
                 tags: [HealthChecks.ReadyTag]);
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
+using SmartRail.IdentityAccess.Api.Authentication;
 
 namespace SmartRail.Host.Http;
 
@@ -45,10 +46,27 @@ public static class OpenApiConfiguration
             || string.Equals(environment.EnvironmentName, EndToEndEnvironment, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>Registers the OpenAPI document generator and its SmartRail transformers.</summary>
-    public static IServiceCollection AddSmartRailOpenApi(this IServiceCollection services)
+    /// <summary>
+    /// Registers the OpenAPI document generator and its SmartRail transformers. The staff OAuth2
+    /// URLs are required only when the documentation is served, so a deployment that turns the
+    /// reference off does not have to configure them.
+    /// </summary>
+    public static IServiceCollection AddSmartRailOpenApi(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        var documented = IsEnabled(environment, configuration);
+        var staffAuthorizationUrl = documented
+            ? Required(configuration, OpenApiSecurity.StaffAuthorizationUrlSetting)
+            : null;
+        var staffTokenUrl = documented
+            ? Required(configuration, OpenApiSecurity.StaffTokenUrlSetting)
+            : null;
 
         services.AddOpenApi(DocumentName, options =>
         {
@@ -65,6 +83,9 @@ public static class OpenApiConfiguration
                 return Task.CompletedTask;
             });
 
+            options.AddDocumentTransformer(
+                new SecuritySchemeDocumentTransformer(staffAuthorizationUrl, staffTokenUrl));
+            options.AddOperationTransformer(new EndpointSecurityOperationTransformer());
             options.AddOperationTransformer(new ProblemDetailsOperationTransformer());
         });
 
@@ -81,15 +102,42 @@ public static class OpenApiConfiguration
             return app;
         }
 
-        app.MapOpenApi(DocumentRoute);
+        app.MapOpenApi(DocumentRoute).AllowAnonymous();
 
         // Scalar serves the reference at "/scalar/" and redirects "/scalar" there, which is how a
         // developer opens it from the route the spec names (api-documentation spec).
+        // For the staff scheme this is a public client, so only the client ID, PKCE and the scopes
+        // are set: Scalar performs the authorization-code flow and sends the resulting token.
+        // The client ID is the same value as the token audience (design D1, D10).
+        var staffClientId = Required(app.Configuration, StaffAuthentication.AudienceSetting);
         app.MapScalarApiReference(ScalarRoute, options => options
             .WithTitle("SmartRail API")
-            .WithOpenApiRoutePattern("/openapi/v1.json"));
+            .WithOpenApiRoutePattern("/openapi/v1.json")
+            .AddPreferredSecuritySchemes([OpenApiSecurity.StaffScheme, OpenApiSecurity.ProviderScheme])
+            .AddAuthorizationCodeFlow(OpenApiSecurity.StaffScheme, flow =>
+            {
+                flow.ClientId = staffClientId;
+                flow.Pkce = Pkce.Sha256;
+                flow.SelectedScopes = OpenApiSecurity.StaffScopes;
+
+                // A relative redirect URI is resolved by Scalar against the page it is served from,
+                // so it is always the Scalar page itself: "<origin>/scalar/" (for the local stack,
+                // http://localhost:5080/scalar/). The Authentik client registers exactly that URI.
+                flow.RedirectUri = $"{ScalarRoute}/";
+            }))
+            .AllowAnonymous();
 
         return app;
+    }
+
+    private static string Required(IConfiguration configuration, string key)
+    {
+        var value = configuration[key];
+
+        return string.IsNullOrWhiteSpace(value)
+            ? throw new InvalidOperationException(
+                $"Configuration setting '{key}' is required when the API documentation is enabled.")
+            : value;
     }
 }
 

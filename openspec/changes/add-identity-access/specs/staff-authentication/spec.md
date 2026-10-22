@@ -25,30 +25,30 @@ A staff endpoint SHALL accept a request only when it carries an `Authorization: 
 After a token is validated, the system SHALL resolve its subject to exactly one SmartRail staff account. A valid token whose subject matches no staff account SHALL be refused with HTTP 403.
 
 #### Scenario: Known staff member
-- **WHEN** a valid token's subject matches the staff account `guard.ishara`
-- **THEN** the request runs as that staff account with its SmartRail role
+- **WHEN** a valid token's subject is `guard.ishara`, a seeded staff account, and the token is in the `guard` group
+- **THEN** the request runs as that staff account with the role `guard`
 
 #### Scenario: Unknown subject
 - **WHEN** a valid token's subject matches no SmartRail staff account
 - **THEN** the response is HTTP 403 and the request is treated as denied
 
 ### Requirement: No credentials stored by SmartRail
-SmartRail SHALL NOT store staff passwords or long-lived staff credentials; it SHALL store only the identity provider's subject identifier, username, display name and role for each staff account (architecture §5, data-model.md).
+SmartRail SHALL NOT store staff passwords or long-lived staff credentials; it SHALL store only the identity provider's subject identifier, username and display name for each staff account (architecture §5, data-model.md).
 
 #### Scenario: Inspecting the identity schema
 - **WHEN** the `identity` schema is inspected after seeding
 - **THEN** no column holds a staff password, password hash or refresh token
 
-### Requirement: Current actor available to modules
-For every authenticated staff request the system SHALL make the caller's staff account ID and role available to the handling module, so that state changes and audit entries can be attributed (EP-03, M-03).
+### Requirement: Current user available to modules
+For every authenticated staff request the system SHALL make the caller's staff account ID and role available to any module's handlers through a Shared Kernel port, so that state changes and audit entries can be attributed (EP-03, M-03).
 
-#### Scenario: Attributed change
-- **WHEN** an authenticated Network Controller performs a write
-- **THEN** the handling module can read that controller's staff ID and the role `network_controller`
+#### Scenario: Attributed caller
+- **WHEN** an authenticated Network Controller calls `GET /identity/me`
+- **THEN** the response holds that controller's staff ID and the role `network_controller`
 
 ### Requirement: Seeded staff accounts
-Staff accounts SHALL be loaded from seed data, one role per account, and the identity provider SHALL be configured from a checked-in declarative configuration that defines the staff client and the matching staff users (mvp-1-scope.md Owner decisions).
+Staff accounts SHALL be loaded from seed data, and the identity provider SHALL be configured from a checked-in declarative configuration that defines the staff client, the three role groups and the matching staff users, each in one group (mvp-1-scope.md Owner decisions).
 
 #### Scenario: Fresh stack
 - **WHEN** the local stack starts from empty volumes
-- **THEN** each seeded staff user can obtain a token from the identity provider and that token resolves to the matching SmartRail account
+- **THEN** each seeded staff user can obtain a token from the identity provider and that token resolves to the matching SmartRail account and role

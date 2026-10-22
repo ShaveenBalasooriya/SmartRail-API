@@ -24,13 +24,6 @@ Requests to provider endpoints SHALL be limited per API key to a configured numb
 - **WHEN** the provider makes its 61st request within one minute
 - **THEN** the response is HTTP 429 and no data is returned
 
-### Requirement: Live streams count once per connection
-Opening a live update stream SHALL count as one request against the limit; the events delivered on an open stream SHALL NOT count.
-
-#### Scenario: Long-lived stream
-- **WHEN** a display keeps one stream open for an hour and receives many events
-- **THEN** the stream is not cut off by the rate limit
-
 ### Requirement: Staff and health endpoints are not rate limited
 Authenticated staff endpoints and health endpoints SHALL NOT be rate limited in MVP 1, so that operations are never throttled during a disruption.
 

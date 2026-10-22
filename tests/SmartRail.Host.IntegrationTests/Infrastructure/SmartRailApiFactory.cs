@@ -1,8 +1,12 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using SmartRail.Host.Http;
+using SmartRail.IdentityAccess.Api.Authentication;
 using Testcontainers.PostgreSql;
 
 namespace SmartRail.Host.IntegrationTests.Infrastructure;
@@ -82,17 +86,20 @@ public sealed class SmartRailApiFactory : WebApplicationFactory<Program>
     private readonly string _environment;
     private readonly string? _documentation;
     private readonly Action<IServiceCollection>? _configureServices;
+    private readonly IReadOnlyDictionary<string, string>? _settings;
 
     public SmartRailApiFactory(
         string connectionString,
         string environment = "E2E",
         bool? documentationEnabled = null,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        IReadOnlyDictionary<string, string>? settings = null)
     {
         _connectionString = connectionString;
         _environment = environment;
         _documentation = documentationEnabled?.ToString().ToLowerInvariant();
         _configureServices = configureServices;
+        _settings = settings;
     }
 
     /// <summary>Everything the Host logged while the test ran.</summary>
@@ -113,9 +120,24 @@ public sealed class SmartRailApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Cors:AllowedOrigins:0", "https://ops.smartrail.test");
         builder.UseSetting("Cors:AllowedOrigins:1", "https://display.smartrail.test");
 
+        // Staff authentication always has settings, so the Host starts; the test services below
+        // then replace the signing key and issuer with a local one (design D11).
+        builder.UseSetting(StaffAuthentication.MetadataAddressSetting, TestTokens.MetadataAddress);
+        builder.UseSetting(StaffAuthentication.ValidIssuerSetting, TestTokens.Issuer);
+        builder.UseSetting(StaffAuthentication.AudienceSetting, TestTokens.Audience);
+
+        // The staff OAuth2 URLs the document publishes when documentation is enabled.
+        builder.UseSetting(OpenApiSecurity.StaffAuthorizationUrlSetting, TestTokens.AuthorizationUrl);
+        builder.UseSetting(OpenApiSecurity.StaffTokenUrlSetting, TestTokens.TokenUrl);
+
         if (_documentation is not null)
         {
             builder.UseSetting(OpenApiConfiguration.EnabledSetting, _documentation);
+        }
+
+        foreach (var (key, value) in _settings ?? new Dictionary<string, string>())
+        {
+            builder.UseSetting(key, value);
         }
 
         builder.ConfigureTestServices(services =>
@@ -129,6 +151,31 @@ public sealed class SmartRailApiFactory : WebApplicationFactory<Program>
             // The test-only endpoints live here, not in the Host: the production image has none.
             services.AddSingleton<IEndpointRegistration, TestEndpoints>();
             services.AddSingleton<ILoggerProvider>(Logs);
+
+            // The staff scheme validates tokens signed with the local test key, so no discovery
+            // document or Authentik is needed. Setting Configuration stops the handler fetching.
+            services.PostConfigure<JwtBearerOptions>(StaffAuthentication.Scheme, options =>
+            {
+                var signingKey = TestTokens.SigningKeyForTests;
+
+                options.Configuration = new OpenIdConnectConfiguration { Issuer = TestTokens.Issuer };
+                options.Configuration.SigningKeys.Add(signingKey);
+                options.MapInboundClaims = false;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = TestTokens.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = TestTokens.Audience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = signingKey,
+                    ClockSkew = TimeSpan.FromSeconds(30),
+                    NameClaimType = TestTokens.SubjectClaim,
+                    AuthenticationType = StaffAuthentication.Scheme,
+                };
+            });
+
             _configureServices?.Invoke(services);
         });
     }

@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using SmartRail.IdentityAccess.Application.Staff;
+using SmartRail.IdentityAccess.Contracts;
 
 namespace SmartRail.IdentityAccess.Application;
 
@@ -12,6 +14,8 @@ public static class DependencyInjection
     public static IServiceCollection AddIdentityAccessApplication(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddScoped<IStaffDirectory, StaffDirectoryService>();
 
         return services;
     }

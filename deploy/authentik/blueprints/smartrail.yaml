@@ -1,0 +1,194 @@
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+# SmartRail's staff identity, applied automatically by Authentik's blueprint discovery
+# (design D10). This is the whole identity configuration SmartRail ships: the staff OAuth2
+# provider, its application, the three role groups and the three seeded staff users.
+#
+# A role is membership of one Authentik group, and SmartRail reads it from the token's
+# `groups` claim. Authentik answers "who is this"; SmartRail decides what the role may do.
+#
+# Staff sign in interactively: the client is public (no client secret to protect in a
+# browser), so it uses authorization code with PKCE S256, and the browser-facing frontends
+# (the operations web, and later the Guard app) and the Scalar reference page all use this one
+# client. A refresh token is issued when `offline_access` is granted. Each user's sign-in
+# password and each user's app password come from the environment, so no secret is stored in
+# this file; see .env.example for the variables and how to generate them.
+#
+# The app password is the second credential: the client_credentials grant with the client ID,
+# a username and that user's app password is how test automation gets a token without a
+# browser. It is kept for that purpose only.
+
+version: 1
+
+metadata:
+  name: SmartRail staff identity
+  labels:
+    blueprints.goauthentik.io/description: >-
+      Staff OAuth2 provider, the three role groups and the seeded staff users for
+      SmartRail MVP 1.
+
+entries:
+  # --- Role groups ----------------------------------------------------------
+  # Exactly the SmartRail role catalogue. Groups outside it are ignored by the API.
+  - model: authentik_core.group
+    id: group-network-controller
+    state: present
+    identifiers:
+      name: network_controller
+
+  - model: authentik_core.group
+    id: group-guard
+    state: present
+    identifiers:
+      name: guard
+
+  - model: authentik_core.group
+    id: group-auditor
+    state: present
+    identifiers:
+      name: auditor
+
+  # --- Seeded staff users ---------------------------------------------------
+  # Each user is in exactly one role group. The username is the token subject
+  # (subject mode "based on the user's username"), so it is also what the
+  # identity.staff_members seed file links on.
+  #
+  # `password` is the interactive sign-in credential; the blueprint importer accepts it and
+  # stores only the hash. Re-applying the blueprint resets it to the environment value, the
+  # same way the app passwords below work. It must be non-empty: Authentik refuses a blank
+  # one, and password authentication is what the default sign-in flow asks for.
+  - model: authentik_core.user
+    id: user-controller-mahesh
+    state: present
+    identifiers:
+      username: controller.mahesh
+    attrs:
+      name: Mahesh Perera
+      is_active: true
+      type: internal
+      password: !Env SMARTRAIL_CONTROLLER_LOGIN_PASSWORD
+      groups:
+        - !KeyOf group-network-controller
+
+  - model: authentik_core.user
+    id: user-guard-ishara
+    state: present
+    identifiers:
+      username: guard.ishara
+    attrs:
+      name: Ishara Fernando
+      is_active: true
+      type: internal
+      password: !Env SMARTRAIL_GUARD_LOGIN_PASSWORD
+      groups:
+        - !KeyOf group-guard
+
+  - model: authentik_core.user
+    id: user-auditor-wasantha
+    state: present
+    identifiers:
+      username: auditor.wasantha
+    attrs:
+      name: Wasantha Silva
+      is_active: true
+      type: internal
+      password: !Env SMARTRAIL_AUDITOR_LOGIN_PASSWORD
+      groups:
+        - !KeyOf group-auditor
+
+  # --- App passwords --------------------------------------------------------
+  # The password half of the client_credentials request, used by test automation only.
+  # `expiring: false` keeps them valid until changed; re-applying the blueprint resets each
+  # key to the environment value, so rotating one is an edit to .env followed by a stack
+  # restart. They are separate from the sign-in password above.
+  - model: authentik_core.token
+    state: present
+    identifiers:
+      identifier: smartrail-controller-app-password
+      user: !KeyOf user-controller-mahesh
+    attrs:
+      intent: app_password
+      expiring: false
+      key: !Env SMARTRAIL_CONTROLLER_APP_PASSWORD
+      description: SmartRail Network Controller app password
+
+  - model: authentik_core.token
+    state: present
+    identifiers:
+      identifier: smartrail-guard-app-password
+      user: !KeyOf user-guard-ishara
+    attrs:
+      intent: app_password
+      expiring: false
+      key: !Env SMARTRAIL_GUARD_APP_PASSWORD
+      description: SmartRail Guard app password
+
+  - model: authentik_core.token
+    state: present
+    identifiers:
+      identifier: smartrail-auditor-app-password
+      user: !KeyOf user-auditor-wasantha
+    attrs:
+      intent: app_password
+      expiring: false
+      key: !Env SMARTRAIL_AUDITOR_APP_PASSWORD
+      description: SmartRail Auditor app password
+
+  # --- Staff OAuth2 provider ------------------------------------------------
+  # Public client: a browser cannot keep a secret, so there is no client secret and the
+  # authorization code flow is protected by PKCE (S256) instead. Authorization code and
+  # refresh token are the interactive grants; client_credentials stays for test automation
+  # with a user's app password (design D10, tasks 7.3).
+  #
+  # `profile` is what puts `groups` in the access token, `openid` is required by the spec,
+  # and `offline_access` is what makes Authentik issue a refresh token. The issuer is per
+  # provider, so tokens carry .../application/o/smartrail-staff/, and `sub` is the username
+  # SmartRail's staff seed links on.
+  #
+  # The redirect URIs are the local stack's values, not production ones:
+  #   - Scalar is served at http://localhost:5080/scalar/ (api-documentation spec), matched
+  #     strictly so no other path on the API host can receive a code.
+  #   - The operations web dev server is http://localhost:5173; a regex allows any path under
+  #     that origin so the frontend can pick its own callback route. It is pinned to the
+  #     origin, not to "any localhost port".
+  # A redirect URI that matches neither is refused before a code is issued.
+  - model: authentik_providers_oauth2.oauth2provider
+    id: provider-smartrail-staff
+    state: present
+    identifiers:
+      name: SmartRail Staff
+    attrs:
+      client_id: smartrail-staff
+      client_type: public
+      grant_types:
+        - authorization_code
+        - refresh_token
+        - client_credentials
+      redirect_uris:
+        - matching_mode: strict
+          url: http://localhost:5080/scalar/
+        - matching_mode: regex
+          url: ^http://localhost:5173/.*$
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
+      sub_mode: user_username
+      issuer_mode: per_provider
+      access_token_validity: minutes=15
+      # A week is long enough for a working session and short enough that a stolen refresh
+      # token expires without an administrator having to revoke it. Staff tokens are only
+      # ever issued with `offline_access` from this client.
+      refresh_token_validity: days=7
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-offline_access]]
+
+  - model: authentik_core.application
+    state: present
+    identifiers:
+      slug: smartrail-staff
+    attrs:
+      name: SmartRail Staff
+      provider: !KeyOf provider-smartrail-staff
+      meta_description: SmartRail operations access for staff.
+      meta_publisher: SmartRail

@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Routing;
 using SmartRail.RailNetwork.Application.Timetable.GetScheduledJourneys;
 using SmartRail.RailNetwork.Contracts;
 using SmartRail.SharedKernel.Api;
+using SmartRail.SharedKernel.Api.Authorization;
 
 namespace SmartRail.RailNetwork.Api.Timetable;
 
 /// <summary>
-/// The timetable's read endpoint: the scheduled journeys of today or tomorrow. Authorisation
-/// arrives with the identity change, so this is open for now.
+/// The timetable's read endpoint: the scheduled journeys of today or tomorrow. It is public data,
+/// so it is served anonymously and carries the public rate limit (design D4).
 /// </summary>
 public sealed class TimetableEndpoints : ICarterModule
 {
@@ -22,6 +23,7 @@ public sealed class TimetableEndpoints : ICarterModule
 
         app.MapGroup("/timetable")
             .WithTags("Timetable")
+            .AllowAnonymousPublic()
             .MapGet("/journeys", GetJourneysAsync)
             .WithName("GetTimetableJourneys")
             .Produces<IReadOnlyList<JourneyDto>>()

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Loads the reference data MVP 1 runs on (the network, the timetable, staff accounts and the catering provider) from version-controlled files, because MVP 1 has no screens for editing any of it (mvp-1-scope.md, Owner decisions).
+Loads reference data from version-controlled files, because MVP 1 has no screens for editing it (mvp-1-scope.md, Owner decisions). In this change only staff accounts and the provider's API key are seeded; how the network and timetable are loaded is still undecided.
 
 ## ADDED Requirements
 
@@ -21,8 +21,8 @@ Seeding SHALL be safe to run on every start. A record already present with the s
 - **THEN** no duplicate rows are created and no existing row is changed
 
 #### Scenario: New record added to a seed file
-- **WHEN** a new station is added to the seed file and the application restarts
-- **THEN** the new station is inserted and the existing stations are untouched
+- **WHEN** a new staff account is added to the seed file and the application restarts
+- **THEN** the new account is inserted and the existing accounts are untouched
 
 ### Requirement: Seeding runs after migrations
 Seeding SHALL run on application start, after every module's migrations, with each module seeding only its own schema and modules seeded in the order their data depends on each other.

@@ -5,6 +5,8 @@ WORKDIR /source
 # Restore first, with only the files that affect it, so a code change does not re-restore.
 COPY global.json Directory.Build.props Directory.Packages.props SmartRail.sln ./
 COPY src/SmartRail.SharedKernel/SmartRail.SharedKernel.csproj src/SmartRail.SharedKernel/
+COPY src/SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj src/SmartRail.SharedKernel.Application/
+COPY src/SmartRail.SharedKernel.Api/SmartRail.SharedKernel.Api.csproj src/SmartRail.SharedKernel.Api/
 COPY src/SmartRail.Host/SmartRail.Host.csproj src/SmartRail.Host/
 COPY src/Contracts/ src/Contracts/
 COPY src/Modules/ src/Modules/

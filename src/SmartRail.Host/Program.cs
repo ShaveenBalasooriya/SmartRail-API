@@ -38,7 +38,20 @@ app.UseCors(CorsConfiguration.PolicyName);
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 
+app.UseAuthentication();
+
+// The fallback policy closes an endpoint that declares no access policy; it must not also
+// challenge the answers routing produces for requests that matched no application endpoint.
+app.UseMiddleware<MappedEndpointAuthorizationMiddleware>();
+
+app.UseAuthorization();
+app.UseRateLimiter();
+
 await app.Services.GetRequiredService<DatabaseMigrator>().MigrateAsync(app.Lifetime.ApplicationStopping);
+
+// Reference data only makes sense on a migrated schema, and readiness stays unhealthy until every
+// seeder has finished (design D9).
+await app.Services.GetRequiredService<DatabaseSeeder>().SeedAsync(app.Lifetime.ApplicationStopping);
 
 app.MapSmartRail();
 

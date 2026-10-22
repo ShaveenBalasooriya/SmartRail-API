@@ -8,13 +8,14 @@ using SmartRail.RailNetwork.Application.Network.GetStation;
 using SmartRail.RailNetwork.Application.Network.GetStations;
 using SmartRail.RailNetwork.Contracts;
 using SmartRail.SharedKernel.Api;
+using SmartRail.SharedKernel.Api.Authorization;
 
 namespace SmartRail.RailNetwork.Api.Network;
 
 /// <summary>
 /// The network's read endpoints: lines with their ordered stations, the stations with their
-/// platforms and lines, and one station by ID. Authorisation arrives with the identity change, so
-/// these are open for now.
+/// platforms and lines, and one station by ID. They are public data, so they are served
+/// anonymously and carry the public rate limit (design D4).
 /// </summary>
 public sealed class NetworkEndpoints : ICarterModule
 {
@@ -23,7 +24,7 @@ public sealed class NetworkEndpoints : ICarterModule
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        var group = app.MapGroup("/network").WithTags("Network");
+        var group = app.MapGroup("/network").WithTags("Network").AllowAnonymousPublic();
 
         group
             .MapGet("/lines", GetLinesAsync)
