@@ -99,6 +99,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartRail.Catering.Api", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartRail.Audit.Api", "src\Modules\Audit\SmartRail.Audit.Api\SmartRail.Audit.Api.csproj", "{11E9EBD8-2F6A-4453-BEAC-A72E76E2E5AE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartRail.RailNetwork.UnitTests", "tests\SmartRail.RailNetwork.UnitTests\SmartRail.RailNetwork.UnitTests.csproj", "{377CB9CF-438F-46CC-984C-E80E64C953DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -565,6 +567,18 @@ Global
 		{11E9EBD8-2F6A-4453-BEAC-A72E76E2E5AE}.Release|x64.Build.0 = Release|Any CPU
 		{11E9EBD8-2F6A-4453-BEAC-A72E76E2E5AE}.Release|x86.ActiveCfg = Release|Any CPU
 		{11E9EBD8-2F6A-4453-BEAC-A72E76E2E5AE}.Release|x86.Build.0 = Release|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Debug|x64.Build.0 = Debug|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Debug|x86.Build.0 = Debug|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Release|x64.ActiveCfg = Release|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Release|x64.Build.0 = Release|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Release|x86.ActiveCfg = Release|Any CPU
+		{377CB9CF-438F-46CC-984C-E80E64C953DF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -616,5 +630,6 @@ Global
 		{3EE8E7FF-5184-4A91-84B2-47D12518F6BE} = {65EB094E-D9BF-82EE-5A5B-07F637C907E3}
 		{5CD77B3C-CD2F-4EF1-89C5-9549F1E9384A} = {91FDA2D8-9056-41A7-91CB-749762740B51}
 		{11E9EBD8-2F6A-4453-BEAC-A72E76E2E5AE} = {B7504168-2F66-9EF4-E8D7-36B98062A6F8}
+		{377CB9CF-438F-46CC-984C-E80E64C953DF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

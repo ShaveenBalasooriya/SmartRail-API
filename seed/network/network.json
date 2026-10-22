@@ -1,0 +1,92 @@
+{
+  "stations": [
+    {
+      "id": "04624d0f-9410-72e3-967f-501ed71f2441",
+      "code": "CMB",
+      "name": "Colombo Fort",
+      "platforms": [
+        { "id": "efcf8de2-8297-7b52-bf7e-5f4af54dc1bf", "number": "1" },
+        { "id": "61e67fba-522e-73bf-beab-5cb90e861c86", "number": "2" },
+        { "id": "573394b2-45be-7539-9a43-fbc6448c7ad7", "number": "3" }
+      ]
+    },
+    {
+      "id": "dc1ed19b-f522-70a9-ae61-15e47102a42f",
+      "code": "KLP",
+      "name": "Kollupitiya",
+      "platforms": [
+        { "id": "e86062e1-aa04-7673-b2dc-51892f077a58", "number": "1" }
+      ]
+    },
+    {
+      "id": "6f818201-ebf9-7374-bbad-74adbab9df38",
+      "code": "BAM",
+      "name": "Bambalapitiya",
+      "platforms": [
+        { "id": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "number": "1" }
+      ]
+    },
+    {
+      "id": "f9df5210-ee64-7a25-bddb-2874488f113d",
+      "code": "WEL",
+      "name": "Wellawatte",
+      "platforms": [
+        { "id": "adfe3193-4394-7926-aa11-8ba3870656dd", "number": "1" }
+      ]
+    },
+    {
+      "id": "c078a9aa-2f80-7422-a65b-bb7313795bd5",
+      "code": "MLV",
+      "name": "Mount Lavinia",
+      "platforms": [
+        { "id": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "number": "1" }
+      ]
+    },
+    {
+      "id": "0059a119-bff4-7696-8cc0-5f44b3631aef",
+      "code": "MAR",
+      "name": "Maradana",
+      "platforms": [
+        { "id": "0ebb762b-94a1-7bda-a124-d693306a5286", "number": "1" }
+      ]
+    },
+    {
+      "id": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735",
+      "code": "DMT",
+      "name": "Dematagoda",
+      "platforms": [
+        { "id": "93b8c48b-045e-7900-b1c9-891fda591870", "number": "1" }
+      ]
+    },
+    {
+      "id": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d",
+      "code": "KLN",
+      "name": "Kelaniya",
+      "platforms": [
+        { "id": "f4290a0d-699f-7965-befa-69b236f41931", "number": "1" }
+      ]
+    },
+    {
+      "id": "0aca0135-24c9-7ab1-9843-3c3c79585d22",
+      "code": "RGM",
+      "name": "Ragama",
+      "platforms": [
+        { "id": "43d72661-ac5e-7672-872f-41016598e8a6", "number": "1" }
+      ]
+    }
+  ],
+  "lines": [
+    {
+      "id": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "code": "COA",
+      "name": "Coastal Line",
+      "stations": ["CMB", "KLP", "BAM", "WEL", "MLV"]
+    },
+    {
+      "id": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "code": "MAI",
+      "name": "Main Line",
+      "stations": ["CMB", "MAR", "DMT", "KLN", "RGM"]
+    }
+  ]
+}
