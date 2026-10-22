@@ -19,8 +19,9 @@ needs them; a clean baseline handed to Live Operations.
 `seed/network/network.json` (lines with ordered station codes; stations with code, name, platforms)
 and `seed/network/timetable.json` (services: code, name, line code, direction, guard username, stops:
 station code, calling, arrive, depart, platform number). Natural keys: line code, station code,
-`(station, platform number)`, service code. Validation runs fully before any insert, collecting all
-errors so one start-up reports every problem.
+`(station, platform number)`, service code. Validation runs before any insert and stops at the first
+problem, naming the file and record. The seed is small and owner-written, so fixing one problem at a
+time is fine.
 
 ### D2. Railway time zone
 `Railway:TimeZone` configuration, default `Asia/Colombo`, resolved with `TimeZoneInfo` (IANA ids
@@ -28,11 +29,14 @@ work on Linux and on Windows with .NET's ICU). All conversions go through one `R
 service built on `TimeProvider`, giving "today", "tomorrow" and local-time-to-UTC for a date.
 
 ### D3. Generation job
-A `BackgroundService` runs `GenerateJourneys(today, tomorrow)` at start-up (after seeding) and then
-wakes at local 00:01. Insert uses `INSERT ... ON CONFLICT (service_id, service_date) DO
-NOTHING RETURNING id`; only returned rows are announced via MediatR `JourneyGenerated`, published
-after commit (an `IPostCommitPublisher` in the Shared Kernel collects notifications and publishes
-them once the unit of work commits, so handlers never see an uncommitted journey).
+Generation runs at start-up (after seeding), and a `BackgroundService` with a `PeriodicTimer` re-runs
+it every hour. Because generation is idempotent, the hourly run picks up the new tomorrow shortly
+after local midnight without any midnight scheduling logic. Insert uses `INSERT ... ON CONFLICT (service_id, service_date) DO
+NOTHING RETURNING id`; only returned rows are announced via MediatR `JourneyGenerated`, published inside the
+request unit of work from `add-audit-record` (D1 there), so Live Operations creates the journey's live
+state in the same transaction. If that handler fails, the journey insert rolls back too and the next
+hourly run retries; a journey can never exist without live state. (Changes to live state itself are
+announced after commit; see `add-live-running-state` D5.)
 
 ### D4. Baseline in the announcement
 `JourneyGenerated` carries every stop: sequence, station ID, calling flag, scheduled arrival and
@@ -50,9 +54,8 @@ the data never changes at runtime. Endpoints: `GET /api/v1/network/lines`,
 
 - [Journeys missed if the app is down over midnight] → Start-up generation covers today and tomorrow,
   so a restart repairs any gap.
-- [Late announcement handler failure leaves a journey without live state] → Live Operations also
-  reconciles at start-up: for today's and tomorrow's journeys without live state it requests the
-  baseline through `ITimetable` (task in `add-live-running-state`).
+- [Late announcement handler failure leaves a journey without live state] → Not possible: the
+  announcement is handled in the same transaction as the insert (D3).
 
 ## Open Questions
 

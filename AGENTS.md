@@ -24,7 +24,9 @@ The design is already settled and written down. **`../docs/architecture.md` and
 authority for scope. Do not re-litigate decisions that are already recorded there — implement them.
 Anything genuinely new or unclear is raised with the owner, not decided silently.
 
-There is currently no application code in this repository. The first work is EP-01.
+The EP-01 foundation (`init-backend-foundation`) is built: the Host, the Shared Kernel, the module
+skeletons, schema-per-module persistence, health, logging, OpenAPI with Scalar, Docker Compose and CI.
+Later work follows the OpenSpec changes in `openspec/changes/`, in the build order below.
 
 ---
 
@@ -156,7 +158,7 @@ modules exist).
 ### Observability and local running
 
 - **Sentry** only, via OpenTelemetry, so one instrumentation serves local and production. **No
-  Aspire.**
+  Aspire.** Sentry and the metrics are added by `add-critical-e2e-flows`, not before.
 - **Docker Compose** runs the API, PostgreSQL, Authentik and the simulated provider. A `/health`
   endpoint backs Compose health checks.
 - Logs must contain **no passenger PII**.
@@ -165,8 +167,16 @@ modules exist).
 
 Three layers, per EP-16: **unit** (Domain, no database), **module integration**
 (`WebApplicationFactory` against real PostgreSQL via Testcontainers), and the **five end-to-end
-flows** in Docker Compose in CI. Do not add an exhaustive suite; do not skip the integration layer,
-where most real risk sits.
+flows** in Docker Compose in CI.
+
+Keep testing lean:
+
+- Write a test only where the task asks for one. Otherwise a task is verified by a clean build and by
+  running the application.
+- Unit tests are for domain rules. Integration tests are for a few genuinely risky points
+  (transactions, idempotent sync, delivery ordering), never one per spec scenario.
+- Do not add architecture tests, coverage checks, concurrency stress tests or fake-clock tests unless
+  a task names them.
 
 ### Build order
 
@@ -261,7 +271,9 @@ Signed-off-by: Shaveen Balasooriya <shaveen.balasooriya@ascentic.se>
 
 ## 6. Definition of done for a change
 
-- It builds, and the tests that cover it pass.
+- It builds, the application starts, and any tests the task asked for pass.
+- It does only what the change's tasks ask: no extra tests, checks, abstractions, caching or
+  hardening.
 - It stays inside one module (or is the same narrow change repeated across modules).
 - It does not cross a module boundary through the database.
 - It commits through Graphite, on a stacked branch, with a message that follows the template above

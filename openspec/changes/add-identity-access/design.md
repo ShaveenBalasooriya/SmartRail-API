@@ -28,14 +28,16 @@ while tokens are short-lived.
 ### D2. Subject mapping
 The Authentik OAuth2 provider is configured with subject mode **"Based on the User's username"**, so
 `sub` equals the username and the seed file can link `staff_members.authentik_subject` without
-knowing Authentik's internal IDs. A claims transformation looks up the staff row (cached for
-60 s) and adds SmartRail's own role claim, after removing any incoming role/group claims.
+knowing Authentik's internal IDs. A claims transformation looks up the staff row and adds SmartRail's own role claim, after
+removing any incoming role/group claims. No cache: one indexed lookup per staff request is cheap at
+MVP 1 volume.
 
 ### D3. Policies as endpoint metadata
 Three extension methods on `RouteHandlerBuilder`/`RouteGroupBuilder`: `.AllowAnonymousPublic()`,
 `.RequireProvider()`, `.RequireStaffRole(params StaffRole[])`. Each sets an authorization policy plus
-a marker metadata item. A start-up check enumerates `EndpointDataSource` and throws if any endpoint
-under `/api/v1` lacks a marker. Health endpoints are excluded.
+a marker metadata item that the OpenAPI transformer reads (D7a). The authorization `FallbackPolicy`
+requires an authenticated staff caller, so an endpoint that forgets its helper is closed, not open.
+Health and documentation endpoints are mapped with `AllowAnonymous`.
 
 ### D4. Denials as a MediatR notification
 A custom `IAuthorizationMiddlewareResultHandler` intercepts Forbidden results. If the endpoint's HTTP
@@ -64,16 +66,14 @@ mode username, access-token lifetime 15 min, client_credentials enabled for test
 the application, and the seeded staff users with app passwords sourced from environment variables.
 Mounted into the Authentik worker in `compose.yaml`.
 
-### D7a. Scalar sign-in
-A second Authentik OAuth2 provider, client ID `smartrail-scalar`, type public, authorization-code
-flow with PKCE required, redirect URI limited to the API's Scalar callback, the same issuer and the
-subject mode from D2. The staff audience check (D1) accepts both client IDs as valid audiences. The
-OpenAPI document adds an OAuth2 `authorizationCode` scheme (authorization and token URLs from the
-Authentik application) and an `X-Api-Key` scheme through an `IOpenApiDocumentTransformer`, and each
-endpoint's policy metadata adds the matching requirement through an operation transformer. Scalar is
-configured with the preferred scheme, the client ID and PKCE (`AddAuthorizationCodeFlow`,
-`AddApiKeyAuthentication`); exact option names are confirmed against the Scalar.AspNetCore version at
-apply time. Nothing secret is configured because the client is public.
+### D7a. Scalar
+The OpenAPI document adds an HTTP `bearer` scheme and an `X-Api-Key` scheme through an
+`IOpenApiDocumentTransformer`, and each endpoint's policy metadata adds the matching requirement
+through an operation transformer. The developer gets a token for a seeded user from Authentik with
+the same client_credentials call the end-to-end tests use, and pastes it into Scalar.
+*Alternative:* a second, public Authentik client with an authorization-code + PKCE sign-in from
+Scalar. Rejected as more Authentik configuration and audience handling than a demo needs; it can be
+added when there is a real browser client.
 
 ### D8. Security documentation
 `docs/security/threat-model.md` (STRIDE over the MVP surfaces: staff API, public API + streams,
@@ -87,8 +87,6 @@ control and a test ID.
   renamed in MVP 1; revisit when account management arrives.
 - [IP partitioning undercounts clients behind shared NAT, e.g. a station Wi-Fi] → Limits are
   generous; the display is one client.
-- [Cached staff lookup delays effect of a seed change by up to 60 s] → Acceptable; no runtime account
-  changes exist in MVP 1.
 
 ## Open Questions
 

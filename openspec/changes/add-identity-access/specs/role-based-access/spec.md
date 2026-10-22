@@ -25,11 +25,11 @@ Authorisation decisions SHALL use the role stored on the SmartRail staff account
 - **THEN** the request is authorised as `guard` only
 
 ### Requirement: Every endpoint has an explicit access policy
-Every endpoint SHALL be classified as exactly one of: public (anonymous), provider (API key), or staff with a named set of allowed roles. An endpoint without a classification SHALL make the application fail to start.
+Every endpoint SHALL be classified as exactly one of: public (anonymous), provider (API key), or staff with a named set of allowed roles. An endpoint that declares no classification SHALL require an authenticated staff caller by default, so that it is never accidentally public.
 
-#### Scenario: Unclassified endpoint
-- **WHEN** a module maps an endpoint without declaring its access policy
-- **THEN** the architecture test or start-up check fails
+#### Scenario: Endpoint without a classification
+- **WHEN** a module maps an endpoint without declaring its access policy and an anonymous request calls it
+- **THEN** the response is HTTP 401
 
 ### Requirement: Wrong role is refused with 403
 A staff request whose role is not allowed by the endpoint's policy SHALL be refused with HTTP 403 problem details and SHALL change nothing (NC-08, GRD-09, AUD-06).

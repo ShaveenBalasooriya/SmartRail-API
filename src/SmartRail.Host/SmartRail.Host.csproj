@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../Modules/IdentityAccess/SmartRail.IdentityAccess.Infrastructure/SmartRail.IdentityAccess.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/RailNetwork/SmartRail.RailNetwork.Infrastructure/SmartRail.RailNetwork.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/LiveOperations/SmartRail.LiveOperations.Infrastructure/SmartRail.LiveOperations.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Distribution/SmartRail.Distribution.Infrastructure/SmartRail.Distribution.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Catering/SmartRail.Catering.Infrastructure/SmartRail.Catering.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Audit/SmartRail.Audit.Infrastructure/SmartRail.Audit.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+</Project>

@@ -17,8 +17,8 @@ work). Departure logs arrive with `add-departure-logging`; status changes with
 
 ## What Changes
 
-- Live state per journey created from each journey announcement, with the timetable baseline; plus a
-  start-up reconciliation for journeys missing live state.
+- Live state per journey created from each journey announcement, with the timetable baseline, in
+  the same transaction as the journey itself.
 - One deterministic rule set that computes lifecycle status, actual and expected times, minutes early
   or late, last and next station, current platform per stop and freshness from the facts recorded so
   far — recomputed from scratch whenever a fact is added, so a correction simply removes a fact.

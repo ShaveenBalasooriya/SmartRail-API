@@ -7,15 +7,11 @@ Defines how SmartRail derives the single live picture of each journey — status
 ## ADDED Requirements
 
 ### Requirement: Live state created for every journey
-When a journey is announced, the system SHALL create its live state with lifecycle status `scheduled`, zero delay, expected times equal to scheduled times, the baseline platforms, the assigned guard and a last-updated time equal to the creation time. At start-up it SHALL create live state for any of today's or tomorrow's journeys that lack it (EP-07).
+When a journey is announced, the system SHALL create its live state with lifecycle status `scheduled`, zero delay, expected times equal to scheduled times, the baseline platforms, the assigned guard and a last-updated time equal to the creation time. (EP-07).
 
 #### Scenario: Journey announced
 - **WHEN** a journey is generated and announced
 - **THEN** its live state exists with status `scheduled` and expected times equal to scheduled times
-
-#### Scenario: Announcement missed
-- **WHEN** the application restarts and a journey for today has no live state
-- **THEN** its live state is created from the timetable during start-up
 
 ### Requirement: State derived only from recorded facts
 A journey's live state SHALL be a deterministic function of its baseline, its recorded departures and its published changes that have not been corrected. Recomputing from the same facts SHALL give the same state, and a corrected change SHALL affect the state as if it had never been published (S-12, NC-06).

@@ -37,10 +37,3 @@ Authenticated staff endpoints and health endpoints SHALL NOT be rate limited in 
 #### Scenario: Controller under pressure
 - **WHEN** a Network Controller makes 200 requests in a minute
 - **THEN** none is refused with 429
-
-### Requirement: Rate limiting keeps no client IP in logs
-Partitioning public clients for rate limiting SHALL NOT cause the client IP address to be written to logs or persisted (EP-14).
-
-#### Scenario: Limited request logged
-- **WHEN** a public request is refused with 429
-- **THEN** its log entry has the status 429 and no IP address

@@ -7,7 +7,7 @@ Turns the timetable into dated operational journeys — the daily instances pass
 ## ADDED Requirements
 
 ### Requirement: Journeys generated for today and tomorrow
-The system SHALL ensure that, for every service, one operational journey exists for today and one for tomorrow, where days are calendar days in the railway's configured time zone. Generation SHALL run at start-up and again shortly after each local midnight.
+The system SHALL ensure that, for every service, one operational journey exists for today and one for tomorrow, where days are calendar days in the railway's configured time zone. Generation SHALL run at start-up and again periodically, so a new day's journeys appear within an hour of local midnight.
 
 #### Scenario: Fresh start
 - **WHEN** the application starts against a seeded database with no journeys
@@ -15,7 +15,7 @@ The system SHALL ensure that, for every service, one operational journey exists 
 
 #### Scenario: Day rolls over
 - **WHEN** local midnight passes while the application is running
-- **THEN** journeys for the new tomorrow are generated within five minutes
+- **THEN** journeys for the new tomorrow are generated within an hour
 
 ### Requirement: Generation is idempotent
 At most one journey SHALL exist per service per date; running generation again SHALL create no duplicates (EP-04).

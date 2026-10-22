@@ -24,8 +24,8 @@ Seeding SHALL be safe to run on every start. A record already present with the s
 - **WHEN** a new station is added to the seed file and the application restarts
 - **THEN** the new station is inserted and the existing stations are untouched
 
-### Requirement: Seeding runs after migrations, in module order
-Seeding SHALL run on application start, after every module's migrations, in a fixed order so that the data a module depends on exists first. Each module seeds only its own schema.
+### Requirement: Seeding runs after migrations
+Seeding SHALL run on application start, after every module's migrations, with each module seeding only its own schema and modules seeded in the order their data depends on each other.
 
 #### Scenario: Ordered start-up
 - **WHEN** the application starts against an empty database

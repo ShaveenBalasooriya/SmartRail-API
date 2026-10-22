@@ -18,19 +18,15 @@ An authenticated provider SHALL be able to register one callback URL, receiving 
 - **THEN** the old URL receives no further deliveries
 
 ### Requirement: URL restrictions
-A callback URL SHALL be an absolute `https` URL of at most 2,048 characters, SHALL NOT include credentials, and in a production environment SHALL NOT resolve to a loopback, link-local or private address; `http` and private addresses SHALL be accepted only when explicitly allowed by configuration for local development (EP-15 server-side request risk).
+A callback URL SHALL be an absolute `http` or `https` URL of at most 2,048 characters and SHALL NOT include credentials (EP-15). Blocking private and loopback addresses is deferred until a real provider is connected (owner decision, 2026-10-19); the only MVP 1 receiver is the simulated provider on the local network.
 
-#### Scenario: Plain http in production
-- **WHEN** the provider registers an `http://` URL in a production configuration
+#### Scenario: Relative URL
+- **WHEN** the provider registers `/webhook` as its callback URL
 - **THEN** the response is HTTP 400
 
-#### Scenario: Private address
-- **WHEN** the URL resolves to 10.0.0.5 in a production configuration
+#### Scenario: Credentials in the URL
+- **WHEN** the provider registers `https://user:pass@example.com/hook`
 - **THEN** the response is HTTP 400
-
-#### Scenario: Local development
-- **WHEN** the development configuration allows private addresses
-- **THEN** the simulated provider's `http://` address is accepted
 
 ### Requirement: Manage own subscription
 A provider SHALL be able to read and deactivate its own subscription and SHALL NOT see or alter another provider's (CAT-04, least privilege).

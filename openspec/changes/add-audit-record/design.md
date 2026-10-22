@@ -36,9 +36,10 @@ previous hash is 64 zeros. Canonical JSON: sorted keys, no whitespace, UTC times
 microsecond precision (PostgreSQL's), so recomputation is stable.
 
 ### D4. Append-only at the database
-The migration revokes UPDATE, DELETE and TRUNCATE on `audit.entries` from the application role and
-adds a `BEFORE UPDATE OR DELETE` trigger that raises an exception (defence in depth if grants
-drift). Migrations run under the same role in MVP 1, so the trigger is the effective guard.
+The migration adds a `BEFORE UPDATE OR DELETE` trigger on `audit.entries` that raises an exception.
+Migrations and the application run under the same database role in MVP 1, so revoking grants from
+that role would not add protection; the trigger is the guard. *Alternative:* a separate migration
+role plus revoked grants. Deferred until deployment uses separate roles.
 
 ### D5. Denials
 `AccessDeniedHandler : INotificationHandler<AccessDenied>` writes the entry in its own transaction

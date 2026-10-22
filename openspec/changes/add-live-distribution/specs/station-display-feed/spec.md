@@ -27,7 +27,7 @@ A journey SHALL appear on the platform it is currently assigned to; after a plat
 ### Requirement: Same data as the passenger app
 For every journey, the display feed SHALL return the same times, status, platform and freshness as the passenger departures endpoint at the same moment (M-14, PAX-14).
 
-#### Scenario: Agreement test
+#### Scenario: Same journey through both endpoints
 - **WHEN** the same journey is read through both endpoints after a delay is published
 - **THEN** the times, status and `lastUpdatedAt` are identical
 

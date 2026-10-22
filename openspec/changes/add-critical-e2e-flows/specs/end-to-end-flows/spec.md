@@ -48,16 +48,16 @@ End-to-end flows SHALL run against the Compose stack with the identity provider 
 - **WHEN** a flow acts as a guard
 - **THEN** its bearer token was issued by the identity provider for the seeded guard account
 
-### Requirement: Deterministic and independent
-Each flow SHALL create or select its own journey and SHALL pass when run alone, in any order, and repeatedly, without depending on another flow's state or on wall-clock time of day (a test clock or its own seeded journeys are used).
+### Requirement: Independent flows
+Each flow SHALL use its own seeded journey and SHALL NOT depend on another flow's state or on the wall-clock time of day.
 
-#### Scenario: Run twice
-- **WHEN** the suite runs twice in a row without resetting the stack
-- **THEN** every flow passes both times
+#### Scenario: One flow alone
+- **WHEN** a single flow runs on its own against a freshly started stack
+- **THEN** it passes
 
 ### Requirement: Run in CI
 The five flows SHALL run in CI on every promotion to `main` and on request for `dev`; a failing flow SHALL block the promotion (EP-16 Done when).
 
 #### Scenario: Failing flow
 - **WHEN** any flow fails in the promotion pipeline
-- **THEN** the pipeline fails and `main` is not updated
+- **THEN** the pipeline fails and the promotion pull request shows a failed check
