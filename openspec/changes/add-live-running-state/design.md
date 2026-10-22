@@ -27,6 +27,10 @@ rejected: inverse logic for each change type is where correction bugs live; reco
 ≤ 5 stops is trivially cheap.
 
 ### D2. Applying a fact (later changes call this)
+> **Superseded by refactor-module-architecture:** `IJourneyFactSink` became the `ApplyJourneyFact`
+> command (`ApplyJourneyFactCommand`), which later changes send through MediatR; the behaviour below is
+> unchanged. Wherever this change says "fact sink" or "sink", read that command.
+
 `IJourneyFactSink.Apply(journeyId, fact)` (Application layer): in one database transaction it takes
 `SELECT ... FOR UPDATE` on the journey's live-state row, loads all facts, recomputes, writes the
 state and stop rows, and — only if the computed state differs from the stored one — appends a journey
@@ -45,6 +49,11 @@ gaps on rollback and can commit out of order under concurrency; consumers theref
 as ordered but not contiguous, and Distribution reads "after position N". The spec only promises
 strict increase, which a sequence gives.
 
+> **Clarified 2026-10-21 (owner decision; `add-event-bus`):** consumers receive `JourneyStateChanged`
+> through the event bus, which promises order only per journey, and Distribution's resume skips by event
+> ID rather than by position (`add-live-distribution` D4). The residual risk described here stays
+> accepted. Nothing changes in this change.
+
 ### D4. Completion
 The calculator marks a journey `completed` when it is computed after the terminus arrival and the
 penultimate calling stop has departed. The job that triggers that recomputation arrives with
@@ -55,6 +64,12 @@ After the sink's transaction commits it publishes
 `JourneyStateChanged(journeyId, eventId, sequenceNumber, streamPosition, eventType)` through
 MediatR. A wider post-commit mechanism is added when a caller needs one.
 
+> **Clarified 2026-10-21 (owner decision; `add-event-bus`, `../docs/architecture.md` §3 "Event delivery"):**
+> this announcement moves from a direct MediatR publish after commit to the event bus: the sink saves an
+> outbox row in the `operations` schema in its own transaction and the bus delivers `JourneyStateChanged`
+> to consumers after commit, at least once, in order per journey. The contract's contents are unchanged.
+> The code change is a task in `add-event-bus` (2.2); this change's history is not rewritten.
+
 ### D6. Snapshot shape
 The event payload snapshot is the same `LiveJourneyView` the contract returns (journey fields + stops
 with scheduled/expected/actual times, current platform, platform-changed time), serialised as JSONB.
@@ -63,7 +78,8 @@ with scheduled/expected/actual times, current platform, platform-changed time), 
 
 - [Out-of-order commit of stream positions could, in theory, make a catch-up miss an event] → Needs
   two journeys committing within milliseconds while a client reconnects; accepted at MVP 1 volume
-  (one controller, a handful of guards). A catch-up safety window is the fix if it is ever seen.
+  (one controller, a handful of guards). A catch-up safety window is the fix if it is ever seen;
+  the bus's per-journey ordering and Distribution's skip-by-ID resume cover the common case (see the D3 note).
 - [Completion depends on the expected arrival; a guard who never logs the penultimate stop leaves the
   journey `running`] → Visible as stale in the operations view; accepted for MVP 1.
 

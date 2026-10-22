@@ -8,7 +8,8 @@ live stream that delivers each change, keeps them honest about freshness, and le
 a dropped connection (M-02, M-09, M-10, M-11, M-12, PAX-02 to PAX-16).
 
 Delivers **EP-09** and the backend of **EP-10** and **EP-11**. Depends on `add-live-running-state`,
-`add-rail-network-timetable` and `add-identity-access`.
+`add-rail-network-timetable`, `add-identity-access` and `add-event-bus` (the hub consumes
+`JourneyStateChanged`).
 
 ## What Changes
 

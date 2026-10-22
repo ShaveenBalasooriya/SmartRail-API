@@ -23,7 +23,8 @@ Depends on `add-rail-network-timetable` (journey announcements). Departure logs 
   or late, last and next station, current platform per stop and freshness from the facts recorded so
   far — recomputed from scratch whenever a fact is added, so a correction simply removes a fact.
 - The `journey_events` stream: every change to a journey's state appends one event with a gap-free
-  per-journey sequence number and a global stream position, and is announced once it is saved.
+  per-journey sequence number and a global stream position, and is announced once it is saved
+  (clarified 2026-10-21: announced through the event bus, `add-event-bus` 2.2).
 - An in-process query contract for live state used by Distribution, Catering and the operations
   endpoints.
 

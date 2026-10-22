@@ -55,3 +55,10 @@ Streams SHALL carry railway data only; the Guard stream SHALL identify the guard
 #### Scenario: Public stream content
 - **WHEN** the public stream's payload is inspected
 - **THEN** it holds no staff names, IDs or tokens
+
+### Requirement: Live streams count once per connection
+Opening a live update stream SHALL count as one request against the public rate limit; the events delivered on an open stream SHALL NOT count.
+
+#### Scenario: Long-lived stream
+- **WHEN** a display keeps one stream open for an hour and receives many events
+- **THEN** the stream is not cut off by the rate limit

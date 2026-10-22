@@ -40,7 +40,7 @@ The system SHALL provide an anonymous endpoint listing upcoming journeys that de
 - **THEN** the response is HTTP 400
 
 ### Requirement: What counts as upcoming
-A journey SHALL be listed as upcoming for a station while it has not yet departed that station, or departed it within the last two minutes; cancelled journeys SHALL stay listed with status `cancelled` until their scheduled departure has passed by ten minutes.
+A journey SHALL be listed as upcoming for a station while it has not yet departed that station, or departed it within the last two minutes; cancelled journeys SHALL stay listed with status `cancelled`, and early-terminated journeys with status `terminated` at the stations after their last served stop [A], until their scheduled departure has passed by ten minutes.
 
 #### Scenario: Train just left
 - **WHEN** a train departed the station one minute ago
@@ -49,6 +49,10 @@ A journey SHALL be listed as upcoming for a station while it has not yet departe
 #### Scenario: Cancelled train
 - **WHEN** a journey is cancelled and its scheduled departure is five minutes ago
 - **THEN** it is still listed as `cancelled`
+
+#### Scenario: Train ended early [A]
+- **WHEN** a journey was ended early at stop 3 and a passenger asks for departures from stop 4's station before its scheduled time
+- **THEN** it is listed as `terminated` with no expected departure
 
 ### Requirement: Journey detail
 The system SHALL provide an anonymous endpoint returning one journey with every stop in order — calling flag, scheduled and expected times, actual departure, current platform, platform-change time — plus last station passed, next station, minutes early or late, status and last-updated time; non-calling stops SHALL be marked as not calling (PAX-03, PAX-04, M-10).
