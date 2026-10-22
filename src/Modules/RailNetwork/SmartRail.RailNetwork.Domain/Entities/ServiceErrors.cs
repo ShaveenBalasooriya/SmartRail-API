@@ -5,6 +5,9 @@ namespace SmartRail.RailNetwork.Domain.Entities;
 /// <summary>The expected failures of creating a <see cref="Service"/>.</summary>
 public static class ServiceErrors
 {
+    public static readonly Error IdRequired =
+        Error.Validation("service.id", "A service identifier is required.");
+
     public static readonly Error LineRequired =
         Error.Validation("service.line", "A service must belong to a line.");
 

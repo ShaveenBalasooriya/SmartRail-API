@@ -11,6 +11,8 @@ using SmartRail.RailNetwork.Infrastructure.Clock;
 using SmartRail.RailNetwork.Infrastructure.Jobs;
 using SmartRail.RailNetwork.Infrastructure.Persistence;
 using SmartRail.RailNetwork.Infrastructure.Repositories;
+using SmartRail.RailNetwork.Infrastructure.Seeding;
+using SmartRail.SharedKernel.Application.Abstractions;
 
 namespace SmartRail.RailNetwork.Infrastructure;
 
@@ -46,6 +48,9 @@ public static class DependencyInjection
         services.AddScoped<INetworkRepository, NetworkRepository>();
         services.AddScoped<ITimetableRepository, TimetableRepository>();
         services.AddScoped<IJourneyRepository, JourneyRepository>();
+
+        // The Host runs every IModuleSeeder after migrations; this module owns only its own schema.
+        services.AddScoped<IModuleSeeder, RailNetworkSeeder>();
 
         // The railway's time zone is configured once here; everything else depends on the port.
         var configuredTimeZoneId = configuration["Railway:TimeZone"];

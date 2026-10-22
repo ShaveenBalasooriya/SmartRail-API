@@ -34,13 +34,22 @@ public sealed class Service : Entity<Guid>
 
     public ICollection<ServiceStop> Stops { get; } = [];
 
-    /// <summary>Creates a service. Its identifier is generated with <see cref="Guid.CreateVersion7"/>.</summary>
+    /// <summary>
+    /// Creates a service with the identifier supplied by its seed file, so that later data can
+    /// reference a known service ID.
+    /// </summary>
     public static Result<Service> Create(
+        Guid id,
         Guid lineId,
         ServiceDirection direction,
         string name,
         Guid guardStaffId)
     {
+        if (id == Guid.Empty)
+        {
+            return Result.Failure<Service>(ServiceErrors.IdRequired);
+        }
+
         if (lineId == Guid.Empty)
         {
             return Result.Failure<Service>(ServiceErrors.LineRequired);
@@ -61,6 +70,6 @@ public sealed class Service : Entity<Guid>
             return Result.Failure<Service>(ServiceErrors.GuardRequired);
         }
 
-        return new Service(Guid.CreateVersion7(), lineId, direction, name.Trim(), guardStaffId);
+        return new Service(id, lineId, direction, name.Trim(), guardStaffId);
     }
 }

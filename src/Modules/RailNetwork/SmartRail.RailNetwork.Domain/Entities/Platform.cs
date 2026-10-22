@@ -24,16 +24,24 @@ public sealed class Platform : Entity<Guid>
 
     public Station Station { get; private set; } = null!;
 
-    /// <summary>Creates a platform. Its identifier is generated with <see cref="Guid.CreateVersion7"/>.</summary>
-    public static Result<Platform> Create(Guid stationId, PlatformNumber number)
+    /// <summary>
+    /// Creates a platform with the identifier supplied by its seed file, so that later data can
+    /// reference a known platform ID.
+    /// </summary>
+    public static Result<Platform> Create(Guid id, Guid stationId, PlatformNumber number)
     {
         ArgumentNullException.ThrowIfNull(number);
+
+        if (id == Guid.Empty)
+        {
+            return Result.Failure<Platform>(PlatformErrors.IdRequired);
+        }
 
         if (stationId == Guid.Empty)
         {
             return Result.Failure<Platform>(PlatformErrors.StationRequired);
         }
 
-        return new Platform(Guid.CreateVersion7(), stationId, number);
+        return new Platform(id, stationId, number);
     }
 }

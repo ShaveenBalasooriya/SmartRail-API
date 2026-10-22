@@ -22,16 +22,24 @@ public sealed class Station : Entity<Guid>
 
     public string Name { get; private set; } = null!;
 
-    /// <summary>Creates a station. Its identifier is generated with <see cref="Guid.CreateVersion7"/>.</summary>
-    public static Result<Station> Create(StationCode code, string name)
+    /// <summary>
+    /// Creates a station with the identifier supplied by its seed file, so that later data can
+    /// reference a known station ID.
+    /// </summary>
+    public static Result<Station> Create(Guid id, StationCode code, string name)
     {
         ArgumentNullException.ThrowIfNull(code);
+
+        if (id == Guid.Empty)
+        {
+            return Result.Failure<Station>(StationErrors.IdRequired);
+        }
 
         if (string.IsNullOrWhiteSpace(name))
         {
             return Result.Failure<Station>(StationErrors.NameRequired);
         }
 
-        return new Station(Guid.CreateVersion7(), code, name.Trim());
+        return new Station(id, code, name.Trim());
     }
 }

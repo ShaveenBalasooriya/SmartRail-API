@@ -24,16 +24,24 @@ public sealed class Line : Entity<Guid>
 
     public ICollection<LineStation> LineStations { get; } = [];
 
-    /// <summary>Creates a line. Its identifier is generated with <see cref="Guid.CreateVersion7"/>.</summary>
-    public static Result<Line> Create(LineCode code, string name)
+    /// <summary>
+    /// Creates a line with the identifier supplied by its seed file, so that later data can
+    /// reference a known line ID.
+    /// </summary>
+    public static Result<Line> Create(Guid id, LineCode code, string name)
     {
         ArgumentNullException.ThrowIfNull(code);
+
+        if (id == Guid.Empty)
+        {
+            return Result.Failure<Line>(LineErrors.IdRequired);
+        }
 
         if (string.IsNullOrWhiteSpace(name))
         {
             return Result.Failure<Line>(LineErrors.NameRequired);
         }
 
-        return new Line(Guid.CreateVersion7(), code, name.Trim());
+        return new Line(id, code, name.Trim());
     }
 }

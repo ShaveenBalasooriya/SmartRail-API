@@ -1,0 +1,732 @@
+{
+  "services": [
+    {
+      "id": "d84562ca-6351-7a4a-90cd-fb7e45f4f0e9",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 0010 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "00:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "00:16", "departure": "00:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "00:23", "departure": "00:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "00:30", "departure": "00:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "00:37" }
+      ]
+    },
+    {
+      "id": "c6d132e7-329a-792d-baf5-29b426ef3395",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 0210 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "02:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "02:16", "departure": "02:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "02:23", "departure": "02:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "02:30", "departure": "02:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "02:37" }
+      ]
+    },
+    {
+      "id": "b20c2af4-470d-7b0f-941a-057b3d6faacf",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 0410 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "04:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "04:16", "departure": "04:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "04:23", "departure": "04:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "04:30", "departure": "04:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "04:37" }
+      ]
+    },
+    {
+      "id": "9bb8bafb-65f8-7f27-b70a-7db7054cf775",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 0610 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "06:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "06:16", "departure": "06:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "06:23", "departure": "06:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "06:30", "departure": "06:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "06:37" }
+      ]
+    },
+    {
+      "id": "e7fa21d4-c8db-7851-bbd6-0a281ea606b7",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 0710 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "07:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "07:16", "departure": "07:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "07:23", "departure": "07:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "07:30", "departure": "07:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "07:37" }
+      ]
+    },
+    {
+      "id": "8d0dc90f-500e-7f9f-9b1f-b4465bd600d6",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 0810 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "08:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "08:16", "departure": "08:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "08:23", "departure": "08:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "08:30", "departure": "08:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "08:37" }
+      ]
+    },
+    {
+      "id": "2d915d49-fa11-739b-870b-8ed65dffc963",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 1010 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "10:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "10:16", "departure": "10:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "10:23", "departure": "10:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "10:30", "departure": "10:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "10:37" }
+      ]
+    },
+    {
+      "id": "3448e508-b0cc-71d2-a7ce-1be9b30683c0",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 1210 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "12:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "12:16", "departure": "12:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "12:23", "departure": "12:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "12:30", "departure": "12:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "12:37" }
+      ]
+    },
+    {
+      "id": "ebb92cdb-36be-7c63-a2af-79a6c631a32e",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 1410 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "14:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "14:16", "departure": "14:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "14:23", "departure": "14:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "14:30", "departure": "14:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "14:37" }
+      ]
+    },
+    {
+      "id": "15ed1826-f3d3-7e33-96f0-f941dd0d4968",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 1610 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "16:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "16:16", "departure": "16:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "16:23", "departure": "16:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "16:30", "departure": "16:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "16:37" }
+      ]
+    },
+    {
+      "id": "3481498f-f853-7ed1-bf5a-0274da645d53",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 1810 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "18:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "18:16", "departure": "18:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "18:23", "departure": "18:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "18:30", "departure": "18:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "18:37" }
+      ]
+    },
+    {
+      "id": "391135b4-204d-7ab9-ae8c-4652d85f4b28",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 2010 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "20:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "20:16", "departure": "20:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "20:23", "departure": "20:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "20:30", "departure": "20:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "20:37" }
+      ]
+    },
+    {
+      "id": "67f52bb2-4a91-7f80-8522-52b93cf6729b",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "outbound",
+      "name": "Coastal 2210 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "22:10" },
+        { "sequence": 2, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "22:16", "departure": "22:17" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "22:23", "departure": "22:24" },
+        { "sequence": 4, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "22:30", "departure": "22:31" },
+        { "sequence": 5, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "arrival": "22:37" }
+      ]
+    },
+    {
+      "id": "adb68a08-bb1e-7dec-82b7-66894f829685",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 0040 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "00:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "00:46", "departure": "00:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "00:53", "departure": "00:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "01:00", "departure": "01:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "01:07" }
+      ]
+    },
+    {
+      "id": "fe25d11b-2dbd-7c44-b14b-50e63619fab8",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 0240 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "02:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "02:46", "departure": "02:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "02:53", "departure": "02:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "03:00", "departure": "03:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "03:07" }
+      ]
+    },
+    {
+      "id": "3e39493a-b087-74cb-a067-3b2d1fa83edd",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 0440 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "04:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "04:46", "departure": "04:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "04:53", "departure": "04:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "05:00", "departure": "05:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "05:07" }
+      ]
+    },
+    {
+      "id": "354e7a24-170a-7864-9f28-871faa2ab2c8",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 0640 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "06:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "06:46", "departure": "06:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "06:53", "departure": "06:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "07:00", "departure": "07:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "07:07" }
+      ]
+    },
+    {
+      "id": "2921415a-0d22-7d4d-bb9d-f4d91113f655",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 0740 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "07:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "07:46", "departure": "07:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "07:53", "departure": "07:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "08:00", "departure": "08:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "08:07" }
+      ]
+    },
+    {
+      "id": "9fd043f9-7c1b-72fc-be24-fa23adfbdd35",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 0840 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "08:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "08:46", "departure": "08:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "08:53", "departure": "08:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "09:00", "departure": "09:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "09:07" }
+      ]
+    },
+    {
+      "id": "08e9e779-d6a0-7c35-9387-1ef1986a3754",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 1040 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "10:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "10:46", "departure": "10:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "10:53", "departure": "10:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "11:00", "departure": "11:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "11:07" }
+      ]
+    },
+    {
+      "id": "bab70cc6-c55f-7796-8b59-dc6337940d95",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 1240 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "12:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "12:46", "departure": "12:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "12:53", "departure": "12:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "13:00", "departure": "13:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "13:07" }
+      ]
+    },
+    {
+      "id": "cd6f8f08-9278-7fe1-b3af-fb63057962a2",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 1440 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "14:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "14:46", "departure": "14:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "14:53", "departure": "14:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "15:00", "departure": "15:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "15:07" }
+      ]
+    },
+    {
+      "id": "15d61802-c74a-73ad-a032-7088b42759ea",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 1640 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "16:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "16:46", "departure": "16:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "16:53", "departure": "16:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "17:00", "departure": "17:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "17:07" }
+      ]
+    },
+    {
+      "id": "ea25c4ce-b4d8-79d9-b11a-39377bcf1a4f",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 1840 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "18:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "18:46", "departure": "18:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "18:53", "departure": "18:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "19:00", "departure": "19:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "19:07" }
+      ]
+    },
+    {
+      "id": "eebe6f4f-f779-7cda-8ec0-48c150c71fe5",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 2040 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "20:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "20:46", "departure": "20:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "20:53", "departure": "20:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "21:00", "departure": "21:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "21:07" }
+      ]
+    },
+    {
+      "id": "d7317dee-6c7f-7699-992d-e15cf29f4a77",
+      "lineId": "f8493f1c-67b5-76e1-acb6-215d4d9f60ae",
+      "direction": "inbound",
+      "name": "Coastal 2240 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "c078a9aa-2f80-7422-a65b-bb7313795bd5", "platformId": "579f8b1e-e3fe-789b-9ba3-20aae4342df3", "isCalling": true, "departure": "22:40" },
+        { "sequence": 2, "stationId": "f9df5210-ee64-7a25-bddb-2874488f113d", "platformId": "adfe3193-4394-7926-aa11-8ba3870656dd", "isCalling": true, "arrival": "22:46", "departure": "22:47" },
+        { "sequence": 3, "stationId": "6f818201-ebf9-7374-bbad-74adbab9df38", "platformId": "8f4b8be6-fea4-7c57-bd1d-64638e6273af", "isCalling": true, "arrival": "22:53", "departure": "22:54" },
+        { "sequence": 4, "stationId": "dc1ed19b-f522-70a9-ae61-15e47102a42f", "platformId": "e86062e1-aa04-7673-b2dc-51892f077a58", "isCalling": true, "arrival": "23:00", "departure": "23:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "23:07" }
+      ]
+    },
+    {
+      "id": "d7764fd7-a978-7da2-94b1-57917fc28fc6",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 0110 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "01:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "01:16", "departure": "01:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "01:23", "departure": "01:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "01:30", "departure": "01:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "01:37" }
+      ]
+    },
+    {
+      "id": "5ab0f572-3bc9-7939-a3d6-fce3cd35513d",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 0310 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "03:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "03:16", "departure": "03:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "03:23", "departure": "03:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "03:30", "departure": "03:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "03:37" }
+      ]
+    },
+    {
+      "id": "92f8d765-d0c7-7e06-844e-e39700d713c9",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 0510 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "05:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "05:16", "departure": "05:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "05:23", "departure": "05:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "05:30", "departure": "05:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "05:37" }
+      ]
+    },
+    {
+      "id": "85b58797-b9b2-757e-b65a-a75ff7b38b73",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 0610 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "06:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "06:16", "departure": "06:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "06:23", "departure": "06:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "06:30", "departure": "06:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "06:37" }
+      ]
+    },
+    {
+      "id": "fb08d97a-21e7-7118-ae55-bb1ba5e24fea",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 0710 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "07:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "07:16", "departure": "07:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "07:23", "departure": "07:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "07:30", "departure": "07:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "07:37" }
+      ]
+    },
+    {
+      "id": "22bc2413-caa2-7aac-b324-49a4982cc1f2",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 0910 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "09:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "09:16", "departure": "09:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "09:23", "departure": "09:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "09:30", "departure": "09:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "09:37" }
+      ]
+    },
+    {
+      "id": "d338e122-f90b-7ffc-a477-7c9ffd8c6921",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 1110 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "11:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "11:16", "departure": "11:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "11:23", "departure": "11:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "11:30", "departure": "11:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "11:37" }
+      ]
+    },
+    {
+      "id": "d94192e1-876c-7483-9548-509391a62b6b",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 1310 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "13:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "13:16", "departure": "13:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "13:23", "departure": "13:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "13:30", "departure": "13:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "13:37" }
+      ]
+    },
+    {
+      "id": "0371dc87-13fa-75f1-bc70-60f01e38cf94",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 1510 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "15:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "15:16", "departure": "15:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "15:23", "departure": "15:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "15:30", "departure": "15:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "15:37" }
+      ]
+    },
+    {
+      "id": "36ec1f04-ac08-7826-b466-e2b265c2be78",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 1710 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "17:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "17:16", "departure": "17:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "17:23", "departure": "17:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "17:30", "departure": "17:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "17:37" }
+      ]
+    },
+    {
+      "id": "9bc9490f-86f3-7aab-9ccc-164b51ca2e7e",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 1910 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "19:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "19:16", "departure": "19:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "19:23", "departure": "19:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "19:30", "departure": "19:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "19:37" }
+      ]
+    },
+    {
+      "id": "a5d7ebe3-a598-7ef8-8d26-6c6febee26be",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 2110 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "21:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "21:16", "departure": "21:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "21:23", "departure": "21:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "21:30", "departure": "21:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "21:37" }
+      ]
+    },
+    {
+      "id": "d7daa37d-af60-7f83-bf05-babe470d6433",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "outbound",
+      "name": "Main 2310 Outbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "61e67fba-522e-73bf-beab-5cb90e861c86", "isCalling": true, "departure": "23:10" },
+        { "sequence": 2, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "23:16", "departure": "23:17" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "23:23", "departure": "23:24" },
+        { "sequence": 4, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "23:30", "departure": "23:31" },
+        { "sequence": 5, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "arrival": "23:37" }
+      ]
+    },
+    {
+      "id": "620ac073-32c5-7ea8-83ea-3ba7d3abfd08",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 0140 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "01:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "01:46", "departure": "01:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "01:53", "departure": "01:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "02:00", "departure": "02:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "02:07" }
+      ]
+    },
+    {
+      "id": "bf37655f-44c6-7cbf-a575-6255b8e608da",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 0340 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "03:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "03:46", "departure": "03:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "03:53", "departure": "03:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "04:00", "departure": "04:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "04:07" }
+      ]
+    },
+    {
+      "id": "355628a9-4450-798b-852f-2307680e79e1",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 0540 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "05:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "05:46", "departure": "05:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "05:53", "departure": "05:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "06:00", "departure": "06:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "06:07" }
+      ]
+    },
+    {
+      "id": "d8511639-3224-7c7a-91e5-1e7ad3b242d1",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 0740 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "07:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "07:46", "departure": "07:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "07:53", "departure": "07:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "08:00", "departure": "08:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "08:07" }
+      ]
+    },
+    {
+      "id": "54001761-b50e-7b8b-9d22-49cea978afe6",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 0940 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "09:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "09:46", "departure": "09:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "09:53", "departure": "09:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "10:00", "departure": "10:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "10:07" }
+      ]
+    },
+    {
+      "id": "64a5f324-d358-787f-a443-39f1c772a03d",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 1140 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "11:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "11:46", "departure": "11:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "11:53", "departure": "11:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "12:00", "departure": "12:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "12:07" }
+      ]
+    },
+    {
+      "id": "112cc7ff-b814-7f8c-bfaa-6277d1a1f79d",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 1340 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "13:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "13:46", "departure": "13:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "13:53", "departure": "13:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "14:00", "departure": "14:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "14:07" }
+      ]
+    },
+    {
+      "id": "02372ce1-107e-739d-a53c-b71e13683749",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 1540 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "15:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "15:46", "departure": "15:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "15:53", "departure": "15:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "16:00", "departure": "16:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "16:07" }
+      ]
+    },
+    {
+      "id": "43a6ed62-a83c-7ec9-8bea-a74fdbcc9672",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 1640 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "16:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "16:46", "departure": "16:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "16:53", "departure": "16:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "17:00", "departure": "17:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "17:07" }
+      ]
+    },
+    {
+      "id": "3e589cc8-2761-747f-bfcc-305d5f642cc6",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 1740 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "17:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "17:46", "departure": "17:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "17:53", "departure": "17:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "18:00", "departure": "18:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "18:07" }
+      ]
+    },
+    {
+      "id": "c1190ced-aae1-7ef9-b880-9b1f2534be08",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 1940 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "19:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "19:46", "departure": "19:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "19:53", "departure": "19:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "20:00", "departure": "20:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "20:07" }
+      ]
+    },
+    {
+      "id": "6aff55cd-f532-71f7-9765-6c1838e1159b",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 2140 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "21:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "21:46", "departure": "21:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "21:53", "departure": "21:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "22:00", "departure": "22:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "22:07" }
+      ]
+    },
+    {
+      "id": "5409b00a-2005-74bd-9fa9-61b1bb532e68",
+      "lineId": "e8a5f56d-ac27-71a6-9323-2fee9e29e357",
+      "direction": "inbound",
+      "name": "Main 2240 Inbound",
+      "guardStaffId": "01a15874-e69d-73b2-b24d-d85d22fdead2",
+      "stops": [
+        { "sequence": 1, "stationId": "0aca0135-24c9-7ab1-9843-3c3c79585d22", "platformId": "43d72661-ac5e-7672-872f-41016598e8a6", "isCalling": true, "departure": "22:40" },
+        { "sequence": 2, "stationId": "d43af228-a2a1-7a6d-bbf3-44e11cf9328d", "platformId": "f4290a0d-699f-7965-befa-69b236f41931", "isCalling": true, "arrival": "22:46", "departure": "22:47" },
+        { "sequence": 3, "stationId": "2344b16a-3cd2-73ac-b07c-b6ebf9ca3735", "platformId": "93b8c48b-045e-7900-b1c9-891fda591870", "isCalling": true, "arrival": "22:53", "departure": "22:54" },
+        { "sequence": 4, "stationId": "0059a119-bff4-7696-8cc0-5f44b3631aef", "platformId": "0ebb762b-94a1-7bda-a124-d693306a5286", "isCalling": true, "arrival": "23:00", "departure": "23:01" },
+        { "sequence": 5, "stationId": "04624d0f-9410-72e3-967f-501ed71f2441", "platformId": "573394b2-45be-7539-9a43-fbc6448c7ad7", "isCalling": true, "arrival": "23:07" }
+      ]
+    }
+  ]
+}
