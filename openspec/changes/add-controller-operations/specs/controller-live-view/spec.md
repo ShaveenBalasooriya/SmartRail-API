@@ -13,8 +13,12 @@ A Network Controller SHALL be able to list all of today's journeys ordered by sc
 - **WHEN** the controller requests today's journeys
 - **THEN** every journey dated today is returned with those fields
 
+#### Scenario: Guard shown by name
+- **WHEN** a journey has an assigned guard
+- **THEN** the journey carries that guard's display name, resolved through Identity's staff directory contract, and not the staff ID
+
 ### Requirement: Stale journeys flagged
-A running journey whose last-updated time is older than a configured threshold (default 10 minutes) SHALL be returned with `isStale: true` and its last-updated time; scheduled, cancelled and completed journeys SHALL NOT be flagged stale (NC-02).
+A running journey whose last-updated time is older than a configured threshold (default 10 minutes) SHALL be returned with `isStale: true` and its last-updated time; scheduled, cancelled, completed and terminated journeys SHALL NOT be flagged stale (NC-02).
 
 #### Scenario: Guard has not logged for a while
 - **WHEN** a running journey was last updated 15 minutes ago

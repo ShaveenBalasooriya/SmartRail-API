@@ -61,7 +61,7 @@ A log SHALL be refused with HTTP 400 when its timestamp lacks an offset, is more
 - **THEN** the stop 3 log is refused with HTTP 400
 
 ### Requirement: Journeys open for logging
-Logs SHALL be accepted for journeys dated today or yesterday in the railway time zone, so a queue synced after midnight is not lost; other dates SHALL be refused with HTTP 400. Logs for a cancelled journey SHALL be accepted and recorded but SHALL NOT change its cancelled status.
+Logs SHALL be accepted for journeys dated today or yesterday in the railway time zone, so a queue synced after midnight is not lost; other dates SHALL be refused with HTTP 400. Logs for a cancelled or terminated journey SHALL be accepted and recorded but SHALL NOT change its status.
 
 #### Scenario: Sync after midnight
 - **WHEN** a log for yesterday's journey arrives at 00:15
@@ -70,6 +70,10 @@ Logs SHALL be accepted for journeys dated today or yesterday in the railway time
 #### Scenario: Journey cancelled while offline
 - **WHEN** a log arrives for a journey cancelled after the tap
 - **THEN** it is recorded with HTTP 201 and the journey stays `cancelled`
+
+#### Scenario: Journey terminated while offline [A]
+- **WHEN** a log arrives for a journey the controller ended early after the tap
+- **THEN** it is recorded with HTTP 201 and the journey stays `terminated`
 
 ### Requirement: Only the assigned guard
 A log for a journey not assigned to the calling guard SHALL be refused with HTTP 403 and announced as a denied write; other roles SHALL receive HTTP 403 (GRD-09, M-04).
@@ -109,3 +113,22 @@ Every accepted or replayed log response SHALL return the stored record with its 
 #### Scenario: Marking an item synced
 - **WHEN** the app receives 201 or 200 for a queued log
 - **THEN** the body contains the client ID and `receivedAt`, which is enough to mark that item synced
+
+### Requirement: Journeys complete automatically
+A `running` journey whose penultimate calling stop has a recorded departure SHALL become `completed` once its expected arrival at the terminus has passed, with no person acting; one `journey_completed` event SHALL be appended in the same transaction and announced after commit (EP-07, M-07; live-running-state "Lifecycle status", journey-event-stream "One event per state change"). A periodic background check [A] performs this, as the passing of time is not a recorded fact.
+
+#### Scenario: Final leg arrives
+- **WHEN** a journey has departed its penultimate calling stop and its expected arrival at the terminus passes
+- **THEN** within one check interval its status is `completed` and one `journey_completed` event exists for it
+
+#### Scenario: Already completed
+- **WHEN** the periodic check runs again for a journey that is already `completed`
+- **THEN** no further event is appended
+
+#### Scenario: Journey ended early [A]
+- **WHEN** the controller has ended a journey early and the periodic check runs
+- **THEN** the journey stays `terminated` and no `journey_completed` event is appended
+
+#### Scenario: Penultimate stop never logged
+- **WHEN** the expected arrival at the terminus passes but the penultimate calling stop has no recorded departure
+- **THEN** the journey stays `running` (the Guard's log is the only source of progress)

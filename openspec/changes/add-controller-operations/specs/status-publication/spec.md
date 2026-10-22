@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Lets the Network Controller publish the three structured changes MVP 1 supports — delay, cancellation and platform change — so they take effect at once on every channel, labelled with how they were produced, attributed and audited (M-16, NC-03, NC-04, NC-05).
+Lets the Network Controller publish the four structured changes MVP 1 supports — delay, cancellation, early termination and platform change — so they take effect at once on every channel, labelled with how they were produced, attributed and audited (M-16, NC-03, NC-04, NC-05; early termination by owner decision 2026-10-21, no story ID yet).
 
 ## ADDED Requirements
 
 ### Requirement: Only today's open journeys can be changed
-A change SHALL be accepted only for a journey dated today in the railway time zone whose status is `scheduled` or `running`; a journey of another date SHALL be refused with HTTP 400 and a cancelled or completed journey with HTTP 409 (mvp-1-scope.md Roles: owns every change to today's journeys).
+A change SHALL be accepted only for a journey dated today in the railway time zone whose status is `scheduled` or `running`; a journey of another date SHALL be refused with HTTP 400 and a cancelled, completed or terminated journey with HTTP 409 (mvp-1-scope.md Roles: owns every change to today's journeys).
 
 #### Scenario: Tomorrow's journey
 - **WHEN** the controller publishes a delay on a journey dated tomorrow
@@ -33,7 +33,7 @@ The controller SHALL be able to publish a delay of a whole number of minutes fro
 - **THEN** the response is HTTP 400
 
 ### Requirement: Publish a cancellation
-The controller SHALL be able to cancel a journey that has no recorded departure; it becomes `cancelled` immediately. A journey with a recorded departure SHALL be refused with HTTP 409, because cancelling a running journey is early termination, which is deferred (NC-04).
+The controller SHALL be able to cancel a journey that has no recorded departure; it becomes `cancelled` immediately. A journey with a recorded departure SHALL be refused with HTTP 409, because ending a running journey is an early termination, published separately (NC-04).
 
 #### Scenario: Cancel before departure
 - **WHEN** the controller cancels a scheduled journey
@@ -85,3 +85,22 @@ Only the `network_controller` role SHALL publish changes; Guard and Auditor toke
 #### Scenario: Guard tries to cancel
 - **WHEN** a Guard token posts a cancellation
 - **THEN** the response is HTTP 403, nothing changes and a denied audit entry exists
+
+### Requirement: Publish an early termination
+The controller SHALL be able to end a `running` journey before its final stop because the train cannot continue, by giving the last calling stop it served (owner decision 2026-10-21, EP-08, M-16). The journey becomes `terminated` immediately, a status distinct from `completed` [A]; no reason is recorded [A]. Later stops keep scheduled times and report no expected times, as for a cancelled journey [A].
+
+#### Scenario: Rolling stock fault
+- **WHEN** the controller ends a running journey at stop 3 of 5
+- **THEN** the response is 201, the status is `terminated`, stops 4 and 5 keep their scheduled times with no expected times, and one `termination_published` event [A] exists
+
+#### Scenario: Journey that has not started
+- **WHEN** the controller ends a scheduled journey
+- **THEN** the response is HTTP 409 and the error says to cancel it instead
+
+#### Scenario: Last stop not valid
+- **WHEN** the given stop is not a calling stop of the journey or is its final calling stop
+- **THEN** the response is HTTP 400
+
+#### Scenario: Stop before the last departure
+- **WHEN** the given stop comes before the highest stop with a recorded departure
+- **THEN** the response is HTTP 409

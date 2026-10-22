@@ -8,8 +8,9 @@ only source of live progress, and it must survive weak signal: logs queue on the
 sync exactly once, with their original times (M-23, M-24).
 
 Delivers the backend of **EP-06**. Stories: GRD-01 to GRD-09 (GRD-06's queue display is a client feature; the server supplies the acknowledgement it needs); the server half of the "Offline guard
-logs sync once" end-to-end flow. Depends on `add-live-running-state` (fact sink) and
-`add-identity-access` (guard role, current actor).
+logs sync once" end-to-end flow. Depends on `add-live-running-state` (fact sink),
+`add-identity-access` (guard role, current actor) and `add-event-bus` (the fact sink's
+`JourneyStateChanged` event travels the bus).
 
 ## What Changes
 
@@ -19,6 +20,8 @@ logs sync once" end-to-end flow. Depends on `add-live-running-state` (fact sink)
   original device timestamp: idempotent replays, conflict detection, validation, an optional delay
   cause from a fixed list.
 - Each accepted log becomes a departure fact in the live state and is audited.
+- A background job that completes finished journeys (the job `add-live-running-state` defers to this
+  change), so `completed` and the `journey_completed` event are actually reached (EP-07).
 
 ## Capabilities
 
