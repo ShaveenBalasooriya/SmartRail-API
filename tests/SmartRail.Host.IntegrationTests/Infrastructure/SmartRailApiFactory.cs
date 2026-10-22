@@ -121,8 +121,15 @@ public sealed class SmartRailApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Cors:AllowedOrigins:1", "https://display.smartrail.test");
 
         // Staff authentication always has settings, so the Host starts; the test services below
-        // then replace the signing key and issuer with a local one (design D11).
-        builder.UseSetting(StaffAuthentication.MetadataAddressSetting, TestTokens.MetadataAddress);
+        // then replace the signing key and issuer with a local one (design D11). Development and
+        // E2E may use the plain-http local address; every other environment needs https.
+        var allowsPlainHttpMetadata =
+            string.Equals(_environment, "Development", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_environment, StaffAuthentication.EndToEndEnvironment, StringComparison.OrdinalIgnoreCase);
+
+        builder.UseSetting(
+            StaffAuthentication.MetadataAddressSetting,
+            allowsPlainHttpMetadata ? TestTokens.MetadataAddress : TestTokens.HttpsMetadataAddress);
         builder.UseSetting(StaffAuthentication.ValidIssuerSetting, TestTokens.Issuer);
         builder.UseSetting(StaffAuthentication.AudienceSetting, TestTokens.Audience);
 

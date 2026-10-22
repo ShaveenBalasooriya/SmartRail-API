@@ -13,21 +13,34 @@ namespace SmartRail.Host.IntegrationTests.Authorization;
 [Collection(PostgresCollection.Name)]
 public sealed class StaffMetadataHttpsTests(PostgresFixture postgres)
 {
-    [Theory]
-    [InlineData("Development", false)]
-    [InlineData("E2E", false)]
-    [InlineData("Staging", true)]
-    [InlineData("Production", true)]
-    public void A_plain_http_metadata_address_requires_https_outside_development_and_e2e(
-        string environment,
-        bool requireHttps)
+    [Fact]
+    public void A_plain_http_metadata_address_is_accepted_in_development()
     {
-        using var factory = new SmartRailApiFactory(postgres.ConnectionString, environment: environment);
+        using var factory = new SmartRailApiFactory(postgres.ConnectionString, environment: "Development");
 
         var options = factory.Services
             .GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
             .Get(StaffAuthentication.Scheme);
 
-        Assert.Equal(requireHttps, options.RequireHttpsMetadata);
+        Assert.False(options.RequireHttpsMetadata);
+    }
+
+    [Fact]
+    public void A_plain_http_metadata_address_is_refused_in_production()
+    {
+        using var factory = new SmartRailApiFactory(
+            postgres.ConnectionString,
+            environment: "Production",
+            settings: new Dictionary<string, string>
+            {
+                // Override the factory's https default with the local plain-http address.
+                [StaffAuthentication.MetadataAddressSetting] = TestTokens.MetadataAddress,
+            });
+
+        var exception = Assert.Throws<InvalidOperationException>(() => factory.Services
+            .GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(StaffAuthentication.Scheme));
+
+        Assert.Contains("HTTPS", exception.Message, StringComparison.Ordinal);
     }
 }
