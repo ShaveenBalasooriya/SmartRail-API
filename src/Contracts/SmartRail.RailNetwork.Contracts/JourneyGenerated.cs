@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace SmartRail.RailNetwork.Contracts;
 
 /// <summary>
@@ -14,4 +12,4 @@ public sealed record JourneyGenerated(
     Guid LineId,
     ServiceDirection Direction,
     Guid GuardStaffId,
-    IReadOnlyList<JourneyStopDto> Stops) : INotification;
+    IReadOnlyList<JourneyStopDto> Stops);

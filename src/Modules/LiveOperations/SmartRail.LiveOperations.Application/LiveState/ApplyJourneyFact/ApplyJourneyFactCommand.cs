@@ -1,9 +1,10 @@
 using System.Text.Json;
-using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using SmartRail.LiveOperations.Application.Abstractions;
 using SmartRail.LiveOperations.Contracts;
 using SmartRail.LiveOperations.Domain.Calculation;
 using SmartRail.LiveOperations.Domain.LiveState;
+using SmartRail.SharedKernel.Application.Events;
 using SmartRail.SharedKernel.Application.Messaging;
 using SmartRail.SharedKernel.Results;
 using JourneyEventType = SmartRail.LiveOperations.Contracts.JourneyEventType;
@@ -13,8 +14,9 @@ namespace SmartRail.LiveOperations.Application.LiveState.ApplyJourneyFact;
 /// <summary>
 /// Applies one recorded fact to a journey's live state (design D4). It replaces the old
 /// <c>IJourneyFactSink</c>: in one transaction it locks the journey's row, recomputes the state,
-/// writes it and appends one event only when the state changed. The event is announced only after
-/// the transaction commits (journey-event-stream spec).
+/// writes it and appends one event only when the state changed. The <see cref="JourneyStateChanged"/>
+/// announcement is recorded in the module's outbox in that same transaction, so it commits or rolls
+/// back with the journey event (design D1, D9).
 /// </summary>
 /// <param name="JourneyId">The journey the fact belongs to.</param>
 /// <param name="Fact">The fact as the calculator sees it, ordered by the order it was committed in.</param>
@@ -34,7 +36,7 @@ internal sealed class ApplyJourneyFactCommandHandler(
     ILiveStateRepository repository,
     IJourneyFactReader factReader,
     IUnitOfWork unitOfWork,
-    IPublisher publisher,
+    [FromKeyedServices(IntegrationEventPublisherKeys.Operations)] IIntegrationEventPublisher publisher,
     TimeProvider timeProvider) : ICommandHandler<ApplyJourneyFactCommand>
 {
     public async Task<Result> Handle(
@@ -42,9 +44,6 @@ internal sealed class ApplyJourneyFactCommandHandler(
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-
-        JourneyEvent? appended = null;
-        JourneyStateChanged? announcement = null;
 
         await using (var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken))
         {
@@ -71,7 +70,7 @@ internal sealed class ApplyJourneyFactCommandHandler(
                     LiveStateMapping.ToView(liveState),
                     LiveJsonOptions.Default);
 
-                appended = liveState.RecordEvent(
+                var appended = liveState.RecordEvent(
                     LiveStateMapping.ToDomain(command.EventType),
                     command.SourceId,
                     command.OccurredAt,
@@ -79,27 +78,26 @@ internal sealed class ApplyJourneyFactCommandHandler(
                     snapshot);
 
                 repository.Append(appended);
+
+                // The outbox row joins the journey event in the same SaveChangesAsync, so a
+                // rollback publishes nothing and the event carries the journey event's ID with the
+                // journey ID as its ordering key (design D1, D6, D9).
+                publisher.Publish(
+                    new JourneyStateChanged(
+                        appended.JourneyId,
+                        appended.Id,
+                        appended.SequenceNumber,
+                        appended.StreamPosition,
+                        LiveStateMapping.ToContract(appended.EventType)),
+                    appended.Id,
+                    appended.JourneyId.ToString());
+
                 await unitOfWork.SaveChangesAsync(cancellationToken);
             }
 
             // A fact that changes nothing consumes no sequence number, appends no event and still
             // commits so the row lock is released.
             await transaction.CommitAsync(cancellationToken);
-
-            if (appended is not null)
-            {
-                announcement = new JourneyStateChanged(
-                    appended.JourneyId,
-                    appended.Id,
-                    appended.SequenceNumber,
-                    appended.StreamPosition,
-                    LiveStateMapping.ToContract(appended.EventType));
-            }
-        }
-
-        if (announcement is not null)
-        {
-            await publisher.Publish(announcement, cancellationToken);
         }
 
         return Result.Success();

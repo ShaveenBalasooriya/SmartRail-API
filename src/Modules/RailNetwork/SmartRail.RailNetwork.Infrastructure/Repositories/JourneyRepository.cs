@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SmartRail.RailNetwork.Application.Journeys;
 using SmartRail.RailNetwork.Domain.Entities;
 using SmartRail.RailNetwork.Infrastructure.Persistence;
@@ -47,6 +48,10 @@ internal sealed class JourneyRepository(RailNetworkDbContext database) : IJourne
         {
             await using var command = connection.CreateCommand();
             command.CommandText = InsertJourneySql;
+
+            // The insert joins the handler's transaction so it commits with the outbox row that
+            // announces the journey (design D1, D9).
+            command.Transaction = database.Database.CurrentTransaction?.GetDbTransaction();
 
             AddParameter(command, "id", journey.Id);
             AddParameter(command, "service_id", journey.ServiceId);

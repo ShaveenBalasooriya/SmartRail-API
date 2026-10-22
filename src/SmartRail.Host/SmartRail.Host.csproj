@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
     <ProjectReference Include="../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
+    <ProjectReference Include="../SmartRail.SharedKernel.Infrastructure/SmartRail.SharedKernel.Infrastructure.csproj" />
     <ProjectReference Include="../Modules/IdentityAccess/SmartRail.IdentityAccess.Infrastructure/SmartRail.IdentityAccess.Infrastructure.csproj" />
     <ProjectReference Include="../Modules/IdentityAccess/SmartRail.IdentityAccess.Api/SmartRail.IdentityAccess.Api.csproj" />
     <ProjectReference Include="../Modules/RailNetwork/SmartRail.RailNetwork.Infrastructure/SmartRail.RailNetwork.Infrastructure.csproj" />

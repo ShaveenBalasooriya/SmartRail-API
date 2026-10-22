@@ -17,6 +17,7 @@ using SmartRail.LiveOperations.Infrastructure;
 using SmartRail.RailNetwork.Api;
 using SmartRail.RailNetwork.Infrastructure;
 using SmartRail.SharedKernel.Application.Behaviors;
+using SmartRail.SharedKernel.Infrastructure;
 using SmartRail.Audit.Infrastructure.Persistence;
 using SmartRail.Catering.Infrastructure.Persistence;
 using SmartRail.IdentityAccess.Infrastructure.Persistence;
@@ -46,6 +47,10 @@ public static class HostComposition
         ArgumentNullException.ThrowIfNull(environment);
 
         services.AddSingleton(TimeProvider.System);
+
+        // The event bus's dispatcher and wake-up signal. Each publishing module adds its own
+        // outbox source, so this registers the bus once and then has no module knowledge.
+        services.AddEventBus();
 
         services.AddSmartRailProblemDetails();
         services.AddSmartRailCors(configuration);

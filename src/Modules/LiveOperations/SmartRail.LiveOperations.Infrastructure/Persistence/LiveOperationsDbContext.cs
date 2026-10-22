@@ -1,13 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SmartRail.LiveOperations.Application.Abstractions;
 using SmartRail.LiveOperations.Domain.LiveState;
+using SmartRail.SharedKernel.Infrastructure.Persistence;
 
 namespace SmartRail.LiveOperations.Infrastructure.Persistence;
 
 /// <summary>
 /// The Live Operations module's database context. It is scoped to the <c>operations</c> schema and
 /// owns its own migrations history table, so no other module's migration state is visible to it
-/// (design D2). It is also the module's unit of work.
+/// (design D2). It is also the module's unit of work and the owner of its event-bus outbox.
 /// </summary>
 public sealed class LiveOperationsDbContext(DbContextOptions<LiveOperationsDbContext> options)
     : DbContext(options), IUnitOfWork
@@ -43,5 +44,6 @@ public sealed class LiveOperationsDbContext(DbContextOptions<LiveOperationsDbCon
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.HasSequence<long>(StreamPositionSequence, Schema).StartsAt(1).IncrementsBy(1);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LiveOperationsDbContext).Assembly);
+        modelBuilder.AddOutbox();
     }
 }

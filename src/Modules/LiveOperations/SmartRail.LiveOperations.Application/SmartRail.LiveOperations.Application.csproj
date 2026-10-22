@@ -9,5 +9,8 @@
   <ItemGroup>
     <PackageReference Include="MediatR" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SmartRail.LiveOperations.Infrastructure" />
+  </ItemGroup>
 </Project>
 

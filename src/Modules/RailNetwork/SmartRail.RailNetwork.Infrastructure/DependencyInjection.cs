@@ -13,6 +13,9 @@ using SmartRail.RailNetwork.Infrastructure.Persistence;
 using SmartRail.RailNetwork.Infrastructure.Repositories;
 using SmartRail.RailNetwork.Infrastructure.Seeding;
 using SmartRail.SharedKernel.Application.Abstractions;
+using SmartRail.SharedKernel.Application.Events;
+using SmartRail.SharedKernel.Infrastructure;
+using SmartRail.SharedKernel.Infrastructure.Events;
 
 namespace SmartRail.RailNetwork.Infrastructure;
 
@@ -39,10 +42,11 @@ public static class DependencyInjection
 
         services.AddRailNetworkApplication();
 
-        services.AddDbContext<RailNetworkDbContext>(options => options
+        services.AddDbContext<RailNetworkDbContext>((provider, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql
                 .MigrationsAssembly(typeof(RailNetworkDbContext).Assembly.FullName)
-                .MigrationsHistoryTable("__ef_migrations_history", RailNetworkDbContext.Schema)));
+                .MigrationsHistoryTable("__ef_migrations_history", RailNetworkDbContext.Schema))
+            .AddOutboxSignal(provider));
 
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<RailNetworkDbContext>());
         services.AddScoped<INetworkRepository, NetworkRepository>();
@@ -51,6 +55,10 @@ public static class DependencyInjection
 
         // The Host runs every IModuleSeeder after migrations; this module owns only its own schema.
         services.AddScoped<IModuleSeeder, RailNetworkSeeder>();
+
+        // The module publishes its cross-module events through its own outbox (design D1, D9).
+        services.AddIntegrationEventPublisher<RailNetworkDbContext>(IntegrationEventPublisherKeys.Network);
+        services.AddOutboxSource<RailNetworkDbContext>(IntegrationEventPublisherKeys.Network);
 
         // The railway's time zone is configured once here; everything else depends on the port.
         var configuredTimeZoneId = configuration["Railway:TimeZone"];

@@ -1,22 +1,23 @@
 using System.Security.Claims;
-using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using SmartRail.IdentityAccess.Application.Abstractions;
 using SmartRail.IdentityAccess.Contracts;
 using SmartRail.SharedKernel.Application.Abstractions;
+using SmartRail.SharedKernel.Application.Events;
 
 namespace SmartRail.IdentityAccess.Api.Authorization;
 
 /// <summary>
-/// Announces every 403 on a state-changing endpoint as an <see cref="AccessDenied"/> notification,
-/// then lets the default handler write the response (design D6). A denied read is silent, because
-/// only attempts to change state are audited.
+/// Publishes every 403 on a state-changing endpoint as an <see cref="AccessDenied"/> through the
+/// module's outbox, then lets the default handler write the response (design D6, D9). A denied read
+/// is silent, because only attempts to change state are audited.
 /// </summary>
 internal sealed class AccessDeniedAuthorizationResultHandler(
     AuthorizationMiddlewareResultHandler defaultHandler,
-    IPublisher publisher,
     TimeProvider timeProvider) : IAuthorizationMiddlewareResultHandler
 {
     public async Task HandleAsync(
@@ -31,11 +32,23 @@ internal sealed class AccessDeniedAuthorizationResultHandler(
 
         if (authorizeResult.Forbidden && IsStateChanging(context.Request.Method))
         {
-            await publisher.Publish(new AccessDenied(
-                StaffIdOf(context.User),
-                context.User.FindFirstValue(SmartRailClaims.Role),
-                ActionOf(context),
-                timeProvider.GetUtcNow()));
+            // This handler is a singleton while the publisher and the unit of work are scoped to
+            // the request, so both are resolved from the request on every call (design D9).
+            var publisher = context.RequestServices.GetRequiredKeyedService<IIntegrationEventPublisher>(
+                IntegrationEventPublisherKeys.Identity);
+            var unitOfWork = context.RequestServices.GetRequiredService<IUnitOfWork>();
+
+            publisher.Publish(
+                new AccessDenied(
+                    StaffIdOf(context.User),
+                    context.User.FindFirstValue(SmartRailClaims.Role),
+                    ActionOf(context),
+                    timeProvider.GetUtcNow()),
+                Guid.CreateVersion7());
+
+            // A denied request has no business transaction of its own, so its outbox row is saved
+            // here; the dispatcher delivers it only once this commits (design D9).
+            await unitOfWork.SaveChangesAsync();
         }
 
         await defaultHandler.HandleAsync(next, context, policy, authorizeResult);

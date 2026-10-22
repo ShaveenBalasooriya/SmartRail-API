@@ -3,6 +3,7 @@
     <ProjectReference Include="../SmartRail.IdentityAccess.Application/SmartRail.IdentityAccess.Application.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
+    <ProjectReference Include="../../../SmartRail.SharedKernel.Infrastructure/SmartRail.SharedKernel.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MediatR" />

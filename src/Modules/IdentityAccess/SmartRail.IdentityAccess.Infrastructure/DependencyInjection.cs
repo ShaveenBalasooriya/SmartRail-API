@@ -2,12 +2,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartRail.IdentityAccess.Application;
+using SmartRail.IdentityAccess.Application.Abstractions;
 using SmartRail.IdentityAccess.Application.ProviderKeys;
 using SmartRail.IdentityAccess.Application.Staff;
 using SmartRail.IdentityAccess.Infrastructure.Persistence;
 using SmartRail.IdentityAccess.Infrastructure.Repositories;
 using SmartRail.IdentityAccess.Infrastructure.Seeding;
 using SmartRail.SharedKernel.Application.Abstractions;
+using SmartRail.SharedKernel.Application.Events;
+using SmartRail.SharedKernel.Infrastructure;
+using SmartRail.SharedKernel.Infrastructure.Events;
 
 namespace SmartRail.IdentityAccess.Infrastructure;
 
@@ -34,10 +38,18 @@ public static class DependencyInjection
 
         services.AddIdentityAccessApplication();
 
-        services.AddDbContext<IdentityDbContext>(options => options
+        // The context owns the module's outbox, so its save wakes the dispatcher (design D7).
+        services.AddDbContext<IdentityDbContext>((provider, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql
                 .MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)
-                .MigrationsHistoryTable("__ef_migrations_history", IdentityDbContext.Schema)));
+                .MigrationsHistoryTable("__ef_migrations_history", IdentityDbContext.Schema))
+            .AddOutboxSignal(provider));
+
+        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<IdentityDbContext>());
+
+        // The module publishes its cross-module events through its own outbox (design D1, D9).
+        services.AddIntegrationEventPublisher<IdentityDbContext>(IntegrationEventPublisherKeys.Identity);
+        services.AddOutboxSource<IdentityDbContext>(IntegrationEventPublisherKeys.Identity);
 
         services.AddScoped<IStaffMemberRepository, StaffMemberRepository>();
         services.AddScoped<IProviderApiKeyRepository, ProviderApiKeyRepository>();

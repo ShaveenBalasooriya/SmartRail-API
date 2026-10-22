@@ -8,6 +8,8 @@ using SmartRail.LiveOperations.Application.LiveState.ApplyJourneyFact;
 using SmartRail.LiveOperations.Contracts;
 using SmartRail.LiveOperations.Domain.Calculation;
 using SmartRail.RailNetwork.Contracts;
+using SmartRail.RailNetwork.Infrastructure.Persistence;
+using SmartRail.SharedKernel.Application.Events;
 
 namespace SmartRail.Host.IntegrationTests.LiveOperations;
 
@@ -48,20 +50,9 @@ public sealed class JourneyFactSinkTests : IDisposable
         var departAt = new DateTimeOffset(2026, 10, 20, 8, 0, 0, TimeSpan.Zero);
 
         using var scope = _factory.Services.CreateScope();
-        var publisher = scope.ServiceProvider.GetRequiredService<IPublisher>();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
-        await publisher.Publish(new JourneyGenerated(
-            journeyId,
-            Guid.CreateVersion7(),
-            new DateOnly(2026, 10, 20),
-            Guid.CreateVersion7(),
-            ServiceDirection.Outbound,
-            Guid.CreateVersion7(),
-            [
-                new JourneyStopDto(1, Guid.CreateVersion7(), true, null, departAt, Guid.CreateVersion7()),
-                new JourneyStopDto(2, Guid.CreateVersion7(), true, departAt.AddMinutes(10), departAt.AddMinutes(11), null),
-            ]));
+        await RecordJourneyGeneratedAsync(scope.ServiceProvider, journeyId, departAt);
 
         var first = new DepartureFact(1, departAt.AddMinutes(3), DateTimeOffset.UtcNow, 1);
         _reader.Facts = [first];
@@ -108,6 +99,53 @@ public sealed class JourneyFactSinkTests : IDisposable
 
         var events = await EventsAsync(journeyId);
         Assert.Equal([1L, 2L], events.Select(appendedEvent => appendedEvent.SequenceNumber));
+    }
+
+    /// <summary>
+    /// Records the announcement through Rail Network's publisher, as generation does, then waits for
+    /// the <c>live-operations.journey-generated</c> consumer to create the journey's live state.
+    /// </summary>
+    private async Task RecordJourneyGeneratedAsync(
+        IServiceProvider services,
+        Guid journeyId,
+        DateTimeOffset departAt)
+    {
+        var publisher = services.GetRequiredKeyedService<IIntegrationEventPublisher>(
+            IntegrationEventPublisherKeys.Network);
+        var database = services.GetRequiredService<RailNetworkDbContext>();
+
+        publisher.Publish(
+            new JourneyGenerated(
+                journeyId,
+                Guid.CreateVersion7(),
+                new DateOnly(2026, 10, 20),
+                Guid.CreateVersion7(),
+                ServiceDirection.Outbound,
+                Guid.CreateVersion7(),
+                [
+                    new JourneyStopDto(1, Guid.CreateVersion7(), true, null, departAt, Guid.CreateVersion7()),
+                    new JourneyStopDto(2, Guid.CreateVersion7(), true, departAt.AddMinutes(10), departAt.AddMinutes(11), null),
+                ]),
+            journeyId);
+
+        await database.SaveChangesAsync();
+
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(10);
+        while (await LiveStateCountAsync(journeyId) == 0 && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+        }
+
+        Assert.Equal(1, await LiveStateCountAsync(journeyId));
+    }
+
+    private async Task<int> LiveStateCountAsync(Guid journeyId)
+    {
+        var count = Assert.Single(await _postgres.QueryAsync(
+            $"SELECT count(*) FROM operations.journey_live_states WHERE journey_id = '{journeyId}'",
+            reader => reader.GetInt64(0)));
+
+        return (int)count;
     }
 
     private Task<List<EventRow>> EventsAsync(Guid journeyId)

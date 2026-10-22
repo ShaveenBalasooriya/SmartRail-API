@@ -1,18 +1,19 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using SmartRail.Host.IntegrationTests.Infrastructure;
 using SmartRail.Host.Http;
 using SmartRail.IdentityAccess.Contracts;
 using SmartRail.SharedKernel.Application.Abstractions;
+using SmartRail.SharedKernel.Infrastructure;
 
 namespace SmartRail.Host.IntegrationTests.Authorization;
 
 /// <summary>
 /// The access rules of the staff surface, against locally signed tokens (design D11): the role
 /// check, the fallback for an unclassified endpoint, the public endpoints, and the denial event
-/// that only a refused write announces (role-based-access spec).
+/// that only a refused write publishes (role-based-access spec, event-publishing spec).
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class StaffAuthorizationTests : IDisposable
@@ -26,14 +27,23 @@ public sealed class StaffAuthorizationTests : IDisposable
     private const string IdentityMeRoute = $"{ApiRoutes.BasePath}/identity/me";
 
     private readonly AccessDeniedRecorder _denials = new();
+    private readonly PostgresFixture _postgres;
     private readonly SmartRailApiFactory _factory;
     private readonly HttpClient _client;
 
     public StaffAuthorizationTests(PostgresFixture postgres)
     {
+        _postgres = postgres;
         _factory = new SmartRailApiFactory(
             postgres.ConnectionString,
-            configureServices: services => services.AddSingleton<INotificationHandler<AccessDenied>>(_denials));
+            configureServices: services =>
+            {
+                services.AddEventConsumer<AccessDenied, AccessDeniedRecorder>();
+
+                // Registered last, so the bus resolves the instance this test holds rather than a
+                // new scoped consumer it could not observe.
+                services.AddSingleton(_denials);
+            });
         _client = _factory.CreateApiClient();
     }
 
@@ -54,6 +64,9 @@ public sealed class StaffAuthorizationTests : IDisposable
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
 
+        // The outbox row is written with the refusal; the dispatcher delivers it shortly after.
+        await WaitForDeliveryAsync();
+
         var denial = Assert.Single(_denials.Denied);
         Assert.Equal(Guid.Parse(GuardStaffId), denial.StaffId);
         Assert.Equal(Roles.Guard, denial.Role);
@@ -61,6 +74,23 @@ public sealed class StaffAuthorizationTests : IDisposable
         Assert.True(
             denial.AttemptedAt > DateTimeOffset.UtcNow.AddMinutes(-1),
             $"AttemptedAt {denial.AttemptedAt} is not the server's current time.");
+
+        // One refusal leaves exactly one published outbox row in the module's own schema
+        // (event-publishing spec: access denied).
+        var outboxRows = await _postgres.QueryAsync(
+            """
+            SELECT payload, published_at
+            FROM identity.outbox_messages
+            WHERE event_type = 'AccessDenied'
+            """,
+            reader => (
+                Payload: reader.GetString(0),
+                PublishedAt: reader.IsDBNull(1) ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>(1)));
+
+        var row = Assert.Single(outboxRows);
+        Assert.NotNull(row.PublishedAt);
+        Assert.Contains(GuardStaffId, row.Payload, StringComparison.Ordinal);
+        Assert.Contains("TestControllerOnlyWrite", row.Payload, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -72,6 +102,11 @@ public sealed class StaffAuthorizationTests : IDisposable
         using var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        // Long enough for the dispatcher's one-second poll: a refusal that was recorded would have
+        // been delivered by now, so nothing arriving proves a denied read is silent.
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
         Assert.Empty(_denials.Denied);
     }
 
@@ -152,6 +187,16 @@ public sealed class StaffAuthorizationTests : IDisposable
         using var response = await _client.GetAsync($"{ApiRoutes.BasePath}/network/stations");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    private async Task WaitForDeliveryAsync()
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+
+        while (_denials.Denied.Count == 0 && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+        }
     }
 
     private sealed record CurrentStaffMember(Guid StaffId, string Username, string Role);

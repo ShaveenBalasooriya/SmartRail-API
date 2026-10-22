@@ -18,6 +18,13 @@ public sealed class DependencyRuleTests
     [
     ];
 
+    /// <summary>
+    /// The event bus's outbox, dispatcher and transport (event-bus design D8). A module's Domain,
+    /// Application and Contracts may use the publisher and consumer abstractions in
+    /// <c>SmartRail.SharedKernel.Application</c> but never this project.
+    /// </summary>
+    private const string SharedKernelInfrastructure = "SmartRail.SharedKernel.Infrastructure";
+
     private static readonly ModuleLayers[] Modules =
     [
         new(
@@ -111,6 +118,43 @@ public sealed class DependencyRuleTests
     }
 
     [Fact]
+    public void No_module_domain_application_or_contracts_project_references_shared_kernel_infrastructure()
+    {
+        var offenders = ModuleLayerProjects()
+            .Where(project => File.ReadAllText(project).Contains(SharedKernelInfrastructure, StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .ToArray();
+
+        Assert.Empty(offenders);
+
+        // A project reference the compiler never needs leaves no trace in the assembly, so the
+        // project files above are checked as well as the types that actually use something.
+        foreach (var module in Modules)
+        {
+            var assemblies = new List<(string Layer, Assembly Assembly)>
+            {
+                ("Application", module.Application),
+                ("Contracts", Contracts(module.Name)),
+            };
+
+            if (module.Domain is not null)
+            {
+                assemblies.Add(("Domain", module.Domain));
+            }
+
+            foreach (var (layer, assembly) in assemblies)
+            {
+                var result = TypesIn(assembly)
+                    .Should()
+                    .NotHaveDependencyOnAny([SharedKernelInfrastructure])
+                    .GetResult();
+
+                AssertRule(result, $"{module.Name}.{layer}");
+            }
+        }
+    }
+
+    [Fact]
     public void Api_does_not_depend_on_infrastructure_or_entity_framework()
     {
         foreach (var module in Modules)
@@ -187,6 +231,37 @@ public sealed class DependencyRuleTests
             })];
 
     private static Assembly Domain(string moduleName) => Assembly.Load($"SmartRail.{moduleName}.Domain");
+
+    private static Assembly Contracts(string moduleName) =>
+        Assembly.Load($"SmartRail.{moduleName}.Contracts");
+
+    /// <summary>Every module Domain, Application and Contracts project file on disk.</summary>
+    private static IEnumerable<string> ModuleLayerProjects()
+    {
+        var source = Path.Combine(RepositoryRoot(), "src");
+
+        var contracts = Directory.GetFiles(Path.Combine(source, "Contracts"), "*.csproj", SearchOption.AllDirectories);
+
+        var modules = Directory.GetDirectories(Path.Combine(source, "Modules"))
+            .SelectMany(module => Directory.GetFiles(module, "*.csproj", SearchOption.AllDirectories))
+            .Where(project => project.EndsWith(".Domain.csproj", StringComparison.Ordinal)
+                || project.EndsWith(".Application.csproj", StringComparison.Ordinal));
+
+        return contracts.Concat(modules);
+    }
+
+    private static string RepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "SmartRail.sln")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName
+            ?? throw new InvalidOperationException("SmartRail.sln was not found above the test output directory.");
+    }
 
     private static void AssertRule(TestResult result, string subject)
     {
