@@ -104,8 +104,8 @@ public sealed class JourneyGeneratedOutboxTests(PostgresFixture postgres)
 
         await postgres.ExecuteAsync(
             $"""
-            INSERT INTO network.lines (id, code, name)
-            VALUES ('{network.LineId}', 'L{code}', 'Test Line');
+            INSERT INTO network.lines (id, code, color, name)
+            VALUES ('{network.LineId}', 'L{code}', '#64748b', 'Test Line');
 
             INSERT INTO network.stations (id, code, name)
             VALUES

@@ -8,9 +8,10 @@ using SmartRail.LiveOperations.Infrastructure.Persistence;
 namespace SmartRail.LiveOperations.Infrastructure.Repositories;
 
 /// <summary>
-/// The live-state writes. Both inserts use <c>ON CONFLICT DO NOTHING</c>, so the announcement
+/// The live-state persistence. Both inserts use <c>ON CONFLICT DO NOTHING</c>, so the announcement
 /// handler and the start-up backfill can run at the same time without either failing or overwriting
-/// the other's row (design D4). The row lock that serialises facts for one journey also lives here.
+/// the other's row (design D4). The row lock that serialises facts for one journey also lives here,
+/// and the completion check reads the running journeys from here without tracking them.
 /// </summary>
 internal sealed class LiveStateRepository(LiveOperationsDbContext database) : ILiveStateRepository
 {
@@ -79,6 +80,8 @@ internal sealed class LiveStateRepository(LiveOperationsDbContext database) : IL
     {
         ArgumentNullException.ThrowIfNull(state);
 
+        // Consumer and backfill only, never inside a request: EF Core cannot begin a transaction on
+        // a context that has already enlisted in the request's one.
         await using var transaction = await database.Database.BeginTransactionAsync(cancellationToken);
         var connection = database.Database.GetDbConnection();
 
@@ -140,6 +143,17 @@ internal sealed class LiveStateRepository(LiveOperationsDbContext database) : IL
         ArgumentNullException.ThrowIfNull(journeyEvent);
 
         database.JourneyEvents.Add(journeyEvent);
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetRunningJourneyIdsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await database.JourneyLiveStates
+            .AsNoTracking()
+            .Where(state => state.Status == JourneyLifecycleStatus.Running)
+            .OrderBy(state => state.Id)
+            .Select(state => state.Id)
+            .ToListAsync(cancellationToken);
     }
 
     private static void AddParameter(DbCommand command, string name, object? value)

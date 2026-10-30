@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SmartRail.LiveOperations.Application.LiveJourneys;
+using SmartRail.LiveOperations.Application.Publishing;
 using SmartRail.LiveOperations.Contracts;
 
 namespace SmartRail.LiveOperations.Application;
@@ -17,6 +18,9 @@ public static class DependencyInjection
 
         // The public read contract is implemented here, by sending the module's own queries.
         services.AddScoped<ILiveJourneys, LiveJourneysContract>();
+
+        // The one write pipeline every published change runs through (design D2).
+        services.AddScoped<StatusChangePublisher>();
 
         return services;
     }

@@ -15,7 +15,7 @@ internal sealed class JourneyEventConfiguration : IEntityTypeConfiguration<Journ
             "journey_events",
             table => table.HasCheckConstraint(
                 "CK_journey_events_event_type",
-                "event_type IN ('departure_logged','delay_published','cancellation_published','platform_changed','correction_published','journey_completed')"));
+                "event_type IN ('departure_logged','delay_published','cancellation_published','termination_published','platform_changed','correction_published','journey_completed')"));
 
         builder.HasKey(journeyEvent => journeyEvent.Id);
 
@@ -53,6 +53,7 @@ internal sealed class JourneyEventConfiguration : IEntityTypeConfiguration<Journ
         JourneyEventType.DepartureLogged => "departure_logged",
         JourneyEventType.DelayPublished => "delay_published",
         JourneyEventType.CancellationPublished => "cancellation_published",
+        JourneyEventType.TerminationPublished => "termination_published",
         JourneyEventType.PlatformChanged => "platform_changed",
         JourneyEventType.CorrectionPublished => "correction_published",
         JourneyEventType.JourneyCompleted => "journey_completed",
@@ -64,6 +65,7 @@ internal sealed class JourneyEventConfiguration : IEntityTypeConfiguration<Journ
         "departure_logged" => JourneyEventType.DepartureLogged,
         "delay_published" => JourneyEventType.DelayPublished,
         "cancellation_published" => JourneyEventType.CancellationPublished,
+        "termination_published" => JourneyEventType.TerminationPublished,
         "platform_changed" => JourneyEventType.PlatformChanged,
         "correction_published" => JourneyEventType.CorrectionPublished,
         "journey_completed" => JourneyEventType.JourneyCompleted,

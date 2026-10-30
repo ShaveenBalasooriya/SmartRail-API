@@ -3,7 +3,7 @@ using SmartRail.LiveOperations.Domain.LiveState;
 namespace SmartRail.LiveOperations.Application.LiveState;
 
 /// <summary>
-/// The writes the live-state use cases need. Raw SQL — the row lock and the idempotent creation
+/// The persistence the live-state use cases need. Raw SQL — the row lock and the idempotent creation
 /// inserts — lives only in the repository implementation (design D4).
 /// </summary>
 public interface ILiveStateRepository
@@ -20,6 +20,13 @@ public interface ILiveStateRepository
     /// call created them and false when another creator got there first.
     /// </summary>
     Task<bool> CreateIfMissingAsync(JourneyLiveState state, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The identifiers of the journeys whose lifecycle status is <c>running</c>, in identifier order
+    /// and with no change tracking. Only a running journey can complete, so a terminated, cancelled
+    /// or completed one is never returned and never touched (design D5).
+    /// </summary>
+    Task<IReadOnlyList<Guid>> GetRunningJourneyIdsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Adds the event to the change tracker; it is written by the next save.</summary>
     void Append(JourneyEvent journeyEvent);

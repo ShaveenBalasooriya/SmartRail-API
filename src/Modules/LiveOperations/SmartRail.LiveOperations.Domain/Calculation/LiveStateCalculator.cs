@@ -35,6 +35,14 @@ public static class LiveStateCalculator
                 group => group.MaxBy(departure => departure.StreamOrder)!);
 
         var cancelled = changes.Any(change => change.Kind == ChangeKind.Cancellation);
+
+        // A journey ends early at the last stop it served; the most recent termination is the one in
+        // force when more than one was published (design D7).
+        var termination = changes
+            .Where(change => change.Kind == ChangeKind.Termination)
+            .MaxBy(change => change.StreamOrder);
+        var terminated = termination is not null;
+
         var delays = new Dictionary<int, int>(stops.Length);
         var stopStates = new StopState[stops.Length];
 
@@ -42,6 +50,13 @@ public static class LiveStateCalculator
         {
             var stop = stops[index];
             var actualDeparture = departureByStop.GetValueOrDefault(stop.Sequence)?.DepartedAt;
+
+            // A cancelled journey reports no expected times at all. A terminated one reports them up
+            // to the last stop the train served and none after it: the train never reaches those
+            // stops, exactly as for a cancelled journey.
+            var noExpectedTimes = cancelled
+                || (termination is not null
+                    && stop.Sequence > (termination.StopSequence ?? int.MinValue));
 
             // A stop that has departed carries its own deviation; one that has not takes the most
             // recently recorded fact that covers it.
@@ -62,8 +77,8 @@ public static class LiveStateCalculator
                 stop.IsCalling,
                 stop.ScheduledArrival,
                 stop.ScheduledDeparture,
-                Expected(stop.ScheduledArrival, delay, cancelled),
-                Expected(stop.ScheduledDeparture, Math.Max(delay, 0), cancelled),
+                Expected(stop.ScheduledArrival, delay, noExpectedTimes),
+                Expected(stop.ScheduledDeparture, Math.Max(delay, 0), noExpectedTimes),
                 actualDeparture,
                 platformChange?.PlatformId ?? stop.PlatformId,
                 platformChange?.PublishedAt);
@@ -79,12 +94,19 @@ public static class LiveStateCalculator
             stop => lastDeparted is null || stop.Sequence > lastDeparted.Sequence);
 
         var completed = !cancelled
+            && !terminated
             && HasCompleted(callingStops, departureByStop, stopStates, now);
 
         JourneyStatus status;
         if (cancelled)
         {
             status = JourneyStatus.Cancelled;
+        }
+        else if (terminated)
+        {
+            // Termination takes precedence over completion: the train did not reach its terminus,
+            // even if the schedule says the terminus arrival has passed (design D7).
+            status = JourneyStatus.Terminated;
         }
         else if (completed)
         {
@@ -99,9 +121,9 @@ public static class LiveStateCalculator
             status = JourneyStatus.Scheduled;
         }
 
-        // A cancelled journey reports no delay and no next station; a finished journey has no next
-        // calling stop to take a delay from, so its delay settles at zero.
-        int? delayMinutes = cancelled
+        // A cancelled or terminated journey reports no delay and no next station; a finished journey
+        // has no next calling stop to take a delay from, so its delay settles at zero.
+        int? delayMinutes = cancelled || terminated
             ? null
             : next is null
                 ? 0
@@ -112,7 +134,7 @@ public static class LiveStateCalculator
             status,
             delayMinutes,
             lastDeparted?.StationId,
-            cancelled ? null : next?.StationId,
+            cancelled || terminated ? null : next?.StationId,
             LatestRecordedAt(departures, changes, baseline.CreatedAt),
             stopStates);
     }
@@ -120,9 +142,9 @@ public static class LiveStateCalculator
     private static DateTimeOffset? Expected(
         DateTimeOffset? scheduled,
         int delayMinutes,
-        bool cancelled)
+        bool noExpectedTime)
     {
-        if (cancelled || scheduled is null)
+        if (noExpectedTime || scheduled is null)
         {
             return null;
         }

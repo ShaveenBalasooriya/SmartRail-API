@@ -27,6 +27,7 @@ internal sealed class JourneyLiveStateConfiguration : IEntityTypeConfiguration<J
         builder.Property(state => state.NextStationId).HasColumnName("next_station_id");
         builder.Property(state => state.LastSequenceNumber).HasColumnName("last_sequence_number");
         builder.Property(state => state.LastUpdatedAt).HasColumnName("last_updated_at");
+        builder.Property(state => state.CorrectedAt).HasColumnName("corrected_at");
 
         builder.HasIndex(state => state.ServiceDate);
 
@@ -42,6 +43,7 @@ internal sealed class JourneyLiveStateConfiguration : IEntityTypeConfiguration<J
         JourneyLifecycleStatus.Scheduled => "scheduled",
         JourneyLifecycleStatus.Running => "running",
         JourneyLifecycleStatus.Cancelled => "cancelled",
+        JourneyLifecycleStatus.Terminated => "terminated",
         JourneyLifecycleStatus.Completed => "completed",
         _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown journey lifecycle status."),
     };
@@ -51,6 +53,7 @@ internal sealed class JourneyLiveStateConfiguration : IEntityTypeConfiguration<J
         "scheduled" => JourneyLifecycleStatus.Scheduled,
         "running" => JourneyLifecycleStatus.Running,
         "cancelled" => JourneyLifecycleStatus.Cancelled,
+        "terminated" => JourneyLifecycleStatus.Terminated,
         "completed" => JourneyLifecycleStatus.Completed,
         _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown journey lifecycle status."),
     };

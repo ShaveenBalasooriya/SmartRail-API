@@ -15,6 +15,12 @@ public enum JourneyLifecycleStatus
     /// <summary>An uncorrected cancellation is in force.</summary>
     Cancelled,
 
+    /// <summary>
+    /// An uncorrected termination is in force: the train ended early, before its terminus (design
+    /// D7).
+    /// </summary>
+    Terminated,
+
     /// <summary>The penultimate calling stop has departed and the terminus arrival has passed.</summary>
     Completed,
 }

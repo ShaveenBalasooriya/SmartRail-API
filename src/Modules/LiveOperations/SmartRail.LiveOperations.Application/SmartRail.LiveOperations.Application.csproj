@@ -5,12 +5,15 @@
     <ProjectReference Include="../../../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
     <ProjectReference Include="../../../Contracts/SmartRail.LiveOperations.Contracts/SmartRail.LiveOperations.Contracts.csproj" />
     <ProjectReference Include="../../../Contracts/SmartRail.RailNetwork.Contracts/SmartRail.RailNetwork.Contracts.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.IdentityAccess.Contracts/SmartRail.IdentityAccess.Contracts.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.Audit.Contracts/SmartRail.Audit.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MediatR" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="SmartRail.LiveOperations.Infrastructure" />
+    <InternalsVisibleTo Include="SmartRail.LiveOperations.UnitTests" />
   </ItemGroup>
 </Project>
 

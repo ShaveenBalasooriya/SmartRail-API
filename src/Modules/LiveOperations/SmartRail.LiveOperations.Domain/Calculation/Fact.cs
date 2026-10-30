@@ -40,6 +40,12 @@ public enum ChangeKind
     /// <summary>The journey is cancelled from end to end.</summary>
     Cancellation,
 
+    /// <summary>
+    /// The journey ends early at <see cref="ChangeFact.StopSequence"/>, the last stop the train
+    /// served (design D7).
+    /// </summary>
+    Termination,
+
     /// <summary>The departure platform at <see cref="ChangeFact.StopSequence"/> changes.</summary>
     PlatformChange,
 }

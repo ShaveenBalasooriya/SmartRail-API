@@ -50,8 +50,10 @@ public sealed record LiveJourneyView(
     Guid? LastDepartedStationId,
     Guid? NextStationId,
     DateTimeOffset LastUpdatedAt,
+    long LastSequenceNumber,
     Guid GuardStaffId,
-    IReadOnlyList<LiveStopView> Stops);
+    IReadOnlyList<LiveStopView> Stops,
+    DateTimeOffset? CorrectedAt);
 
 /// <summary>
 /// One stop's live data, in sequence order. A non-calling stop keeps its station but has no
@@ -73,6 +75,10 @@ public sealed record LiveStopView(
 /// One event of the persisted journey event stream (journey-event-stream spec).
 /// <see cref="SourceId"/> is the departure log or status change that produced the event;
 /// <see cref="Snapshot"/> is the journey's live state immediately after the event was committed.
+/// A <see cref="JourneyEventType.CorrectionPublished"/> event also names what it withdraws:
+/// <see cref="CorrectsChangeId"/> is the original change and <see cref="CorrectsEventId"/> the event
+/// that recorded it, so a channel that received the original can match the correction to it. Both
+/// are <see langword="null"/> for every other event type (change-correction spec).
 /// </summary>
 public sealed record JourneyEventView(
     Guid Id,
@@ -83,4 +89,6 @@ public sealed record JourneyEventView(
     Guid? SourceId,
     DateTimeOffset OccurredAt,
     DateTimeOffset RecordedAt,
-    LiveJourneyView Snapshot);
+    LiveJourneyView Snapshot,
+    Guid? CorrectsChangeId,
+    Guid? CorrectsEventId);

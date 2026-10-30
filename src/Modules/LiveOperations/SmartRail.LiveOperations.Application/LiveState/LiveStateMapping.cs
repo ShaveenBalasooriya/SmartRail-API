@@ -28,6 +28,7 @@ internal static class LiveStateMapping
             state.LastDepartedStationId,
             state.NextStationId,
             state.LastUpdatedAt,
+            state.LastSequenceNumber,
             state.GuardStaffId,
             state.Stops
                 .OrderBy(stop => stop.Sequence)
@@ -42,7 +43,8 @@ internal static class LiveStateMapping
                     stop.ActualDeparture,
                     stop.PlatformId,
                     stop.PlatformChangedAt))
-                .ToArray());
+                .ToArray(),
+            state.CorrectedAt);
     }
 
     public static ContractJourneyLifecycleStatus ToContract(DomainJourneyLifecycleStatus status) => status switch
@@ -50,6 +52,7 @@ internal static class LiveStateMapping
         DomainJourneyLifecycleStatus.Scheduled => ContractJourneyLifecycleStatus.Scheduled,
         DomainJourneyLifecycleStatus.Running => ContractJourneyLifecycleStatus.Running,
         DomainJourneyLifecycleStatus.Cancelled => ContractJourneyLifecycleStatus.Cancelled,
+        DomainJourneyLifecycleStatus.Terminated => ContractJourneyLifecycleStatus.Terminated,
         DomainJourneyLifecycleStatus.Completed => ContractJourneyLifecycleStatus.Completed,
         _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown journey lifecycle status."),
     };
@@ -59,6 +62,7 @@ internal static class LiveStateMapping
         DomainJourneyEventType.DepartureLogged => ContractJourneyEventType.DepartureLogged,
         DomainJourneyEventType.DelayPublished => ContractJourneyEventType.DelayPublished,
         DomainJourneyEventType.CancellationPublished => ContractJourneyEventType.CancellationPublished,
+        DomainJourneyEventType.TerminationPublished => ContractJourneyEventType.TerminationPublished,
         DomainJourneyEventType.PlatformChanged => ContractJourneyEventType.PlatformChanged,
         DomainJourneyEventType.CorrectionPublished => ContractJourneyEventType.CorrectionPublished,
         DomainJourneyEventType.JourneyCompleted => ContractJourneyEventType.JourneyCompleted,
@@ -70,6 +74,7 @@ internal static class LiveStateMapping
         ContractJourneyEventType.DepartureLogged => DomainJourneyEventType.DepartureLogged,
         ContractJourneyEventType.DelayPublished => DomainJourneyEventType.DelayPublished,
         ContractJourneyEventType.CancellationPublished => DomainJourneyEventType.CancellationPublished,
+        ContractJourneyEventType.TerminationPublished => DomainJourneyEventType.TerminationPublished,
         ContractJourneyEventType.PlatformChanged => DomainJourneyEventType.PlatformChanged,
         ContractJourneyEventType.CorrectionPublished => DomainJourneyEventType.CorrectionPublished,
         ContractJourneyEventType.JourneyCompleted => DomainJourneyEventType.JourneyCompleted,

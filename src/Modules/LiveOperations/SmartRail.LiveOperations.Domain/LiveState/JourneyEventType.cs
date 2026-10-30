@@ -1,7 +1,7 @@
 namespace SmartRail.LiveOperations.Domain.LiveState;
 
 /// <summary>
-/// The kinds of change a journey event records. These are exactly the six types the event stream
+/// The kinds of change a journey event records. These are exactly the types the event stream
 /// accepts (journey-event-stream spec). The public contract keeps its own enum; Application maps
 /// between the two.
 /// </summary>
@@ -15,6 +15,9 @@ public enum JourneyEventType
 
     /// <summary>The Network Controller cancelled the journey.</summary>
     CancellationPublished,
+
+    /// <summary>The Network Controller ended the journey early (design D7).</summary>
+    TerminationPublished,
 
     /// <summary>The Network Controller changed a stop's platform.</summary>
     PlatformChanged,

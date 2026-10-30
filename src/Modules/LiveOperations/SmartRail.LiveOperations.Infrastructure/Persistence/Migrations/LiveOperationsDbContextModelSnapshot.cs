@@ -23,7 +23,133 @@ namespace SmartRail.LiveOperations.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence("fact_order_seq", "operations");
+
             modelBuilder.HasSequence("journey_events_stream_position_seq", "operations");
+
+            modelBuilder.Entity("SmartRail.LiveOperations.Domain.Changes.StatusChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AuditEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_entry_id");
+
+                    b.Property<Guid?>("CorrectsChangeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("corrects_change_id");
+
+                    b.Property<int?>("DelayMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("delay_minutes");
+
+                    b.Property<long>("FactOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("fact_order")
+                        .HasDefaultValueSql("nextval('operations.fact_order_seq')");
+
+                    b.Property<Guid>("JourneyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journey_id");
+
+                    b.Property<Guid?>("NewPlatformId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("new_platform_id");
+
+                    b.Property<Guid?>("PreviousPlatformId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("previous_platform_id");
+
+                    b.Property<string>("Provenance")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("provenance");
+
+                    b.Property<DateTimeOffset>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<Guid>("PublishedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("published_by");
+
+                    b.Property<int?>("StopSequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_sequence");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("change_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrectsChangeId")
+                        .IsUnique();
+
+                    b.HasIndex("JourneyId", "FactOrder");
+
+                    b.ToTable("status_changes", "operations", t =>
+                        {
+                            t.HasCheckConstraint("CK_status_changes_change_type", "change_type IN ('delay','cancellation','termination','platform_change','correction')");
+
+                            t.HasCheckConstraint("CK_status_changes_provenance", "provenance IN ('automatically_published')");
+                        });
+                });
+
+            modelBuilder.Entity("SmartRail.LiveOperations.Domain.Departures.DepartureLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("DelayCause")
+                        .HasColumnType("text")
+                        .HasColumnName("delay_cause");
+
+                    b.Property<DateTimeOffset>("DepartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("departed_at");
+
+                    b.Property<long>("FactOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("fact_order")
+                        .HasDefaultValueSql("nextval('operations.fact_order_seq')");
+
+                    b.Property<Guid>("GuardStaffId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("guard_staff_id");
+
+                    b.Property<Guid>("JourneyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("journey_id");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.Property<Guid>("StationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("station_id");
+
+                    b.Property<int>("StopSequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("stop_sequence");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JourneyId", "StopSequence")
+                        .IsUnique();
+
+                    b.ToTable("departure_logs", "operations", t =>
+                        {
+                            t.HasCheckConstraint("CK_departure_logs_delay_cause", "delay_cause IN ('signalling','rolling_stock','crew','passenger_boarding','infrastructure','weather','other')");
+                        });
+                });
 
             modelBuilder.Entity("SmartRail.LiveOperations.Domain.LiveState.JourneyEvent", b =>
                 {
@@ -80,7 +206,7 @@ namespace SmartRail.LiveOperations.Infrastructure.Persistence.Migrations
 
                     b.ToTable("journey_events", "operations", t =>
                         {
-                            t.HasCheckConstraint("CK_journey_events_event_type", "event_type IN ('departure_logged','delay_published','cancellation_published','platform_changed','correction_published','journey_completed')");
+                            t.HasCheckConstraint("CK_journey_events_event_type", "event_type IN ('departure_logged','delay_published','cancellation_published','termination_published','platform_changed','correction_published','journey_completed')");
                         });
                 });
 
@@ -89,6 +215,10 @@ namespace SmartRail.LiveOperations.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("journey_id");
+
+                    b.Property<DateTimeOffset?>("CorrectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("corrected_at");
 
                     b.Property<int?>("DelayMinutes")
                         .HasColumnType("integer")
@@ -270,6 +400,29 @@ namespace SmartRail.LiveOperations.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("outbox_messages", "operations");
+                });
+
+            modelBuilder.Entity("SmartRail.LiveOperations.Domain.Changes.StatusChange", b =>
+                {
+                    b.HasOne("SmartRail.LiveOperations.Domain.Changes.StatusChange", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectsChangeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartRail.LiveOperations.Domain.LiveState.JourneyLiveState", null)
+                        .WithMany()
+                        .HasForeignKey("JourneyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartRail.LiveOperations.Domain.Departures.DepartureLog", b =>
+                {
+                    b.HasOne("SmartRail.LiveOperations.Domain.LiveState.JourneyLiveState", null)
+                        .WithMany()
+                        .HasForeignKey("JourneyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SmartRail.LiveOperations.Domain.LiveState.JourneyEvent", b =>

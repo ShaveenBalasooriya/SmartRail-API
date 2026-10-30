@@ -4,6 +4,7 @@ using SmartRail.LiveOperations.Contracts;
 using SmartRail.LiveOperations.Domain.LiveState;
 using SmartRail.SharedKernel.Application.Messaging;
 using SmartRail.SharedKernel.Results;
+using DomainJourneyEventType = SmartRail.LiveOperations.Domain.LiveState.JourneyEventType;
 
 namespace SmartRail.LiveOperations.Application.JourneyEvents.GetEventsAfter;
 
@@ -32,11 +33,34 @@ internal sealed class GetEventsAfterQueryHandler(IJourneyEventRepository reposit
             Math.Clamp(query.Limit, 1, MaxEventLimit),
             cancellationToken);
 
-        return Result.Success<IReadOnlyList<JourneyEventView>>([.. events.Select(ToView)]);
+        // A correction names the original change and the event that recorded it, so a channel that
+        // received the original can match the correction to it (change-correction spec). The links
+        // are read from the stored rows rather than from a column on the event itself.
+        var correctionChangeIds = events
+            .Where(journeyEvent => journeyEvent.EventType == DomainJourneyEventType.CorrectionPublished
+                && journeyEvent.StatusChangeId is not null)
+            .Select(journeyEvent => journeyEvent.StatusChangeId!.Value)
+            .Distinct()
+            .ToArray();
+
+        var corrections = correctionChangeIds.Length == 0
+            ? new Dictionary<Guid, CorrectionReference>()
+            : await repository.GetCorrectionReferencesAsync(correctionChangeIds, cancellationToken);
+
+        return Result.Success<IReadOnlyList<JourneyEventView>>(
+            [.. events.Select(journeyEvent => ToView(journeyEvent, corrections))]);
     }
 
-    private static JourneyEventView ToView(JourneyEvent journeyEvent)
+    private static JourneyEventView ToView(
+        JourneyEvent journeyEvent,
+        IReadOnlyDictionary<Guid, CorrectionReference> corrections)
     {
+        var correction = journeyEvent.EventType == DomainJourneyEventType.CorrectionPublished
+            && journeyEvent.StatusChangeId is { } changeId
+            && corrections.TryGetValue(changeId, out var reference)
+                ? reference
+                : null;
+
         return new JourneyEventView(
             journeyEvent.Id,
             LiveStateMapping.ToContract(journeyEvent.EventType),
@@ -48,6 +72,8 @@ internal sealed class GetEventsAfterQueryHandler(IJourneyEventRepository reposit
             journeyEvent.RecordedAt,
             JsonSerializer.Deserialize<LiveJourneyView>(journeyEvent.Payload, LiveJsonOptions.Default)
                 ?? throw new InvalidOperationException(
-                    $"Journey event {journeyEvent.Id} carries a payload that is not a live journey snapshot."));
+                    $"Journey event {journeyEvent.Id} carries a payload that is not a live journey snapshot."),
+            correction?.CorrectsChangeId,
+            correction?.CorrectsEventId);
     }
 }

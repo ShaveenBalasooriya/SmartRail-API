@@ -234,6 +234,120 @@ public sealed class LiveStateCalculatorTests
     }
 
     [Fact]
+    public void Terminated_at_stop_three_reports_no_expected_times_after_it()
+    {
+        Fact[] facts =
+        [
+            new DepartureFact(2, At(8, 12), At(8, 12), StreamOrder: 1),
+            new DepartureFact(3, At(8, 20), At(8, 20), StreamOrder: 2),
+            new ChangeFact(ChangeKind.Termination, 3, null, null, At(8, 21), StreamOrder: 3, Corrected: false),
+        ];
+
+        var state = LiveStateCalculator.Compute(CreateBaseline(), facts, At(8, 25));
+
+        Assert.Equal(JourneyStatus.Terminated, state.Status);
+        Assert.Null(state.DelayMinutes);
+        Assert.Null(state.NextStationId);
+        Assert.Equal(Station3, state.LastDepartedStationId);
+
+        // The stops the train served keep the actuals and expected times the departures give.
+        Assert.Equal(At(8, 12), state.Stops[1].ActualDeparture);
+        Assert.Equal(At(8, 12), state.Stops[1].ExpectedDeparture);
+        Assert.Equal(At(8, 20), state.Stops[2].ActualDeparture);
+        Assert.Equal(At(8, 22), state.Stops[2].ExpectedDeparture);
+
+        // The stops it never reached keep their scheduled times and report no expected times.
+        Assert.Equal(At(8, 30), state.Stops[3].ScheduledArrival);
+        Assert.Equal(At(8, 32), state.Stops[3].ScheduledDeparture);
+        Assert.Null(state.Stops[3].ExpectedArrival);
+        Assert.Null(state.Stops[3].ExpectedDeparture);
+        Assert.Equal(At(8, 40), state.Stops[4].ScheduledArrival);
+        Assert.Null(state.Stops[4].ExpectedArrival);
+        Assert.Null(state.Stops[4].ExpectedDeparture);
+    }
+
+    [Fact]
+    public void Corrected_termination_returns_the_journey_to_running()
+    {
+        var baseline = CreateBaseline();
+        Fact[] departures =
+        [
+            new DepartureFact(1, At(8, 0), At(8, 0), StreamOrder: 1),
+            new DepartureFact(2, At(8, 12), At(8, 12), StreamOrder: 2),
+        ];
+        var termination = new ChangeFact(
+            ChangeKind.Termination,
+            2,
+            null,
+            null,
+            At(8, 13),
+            StreamOrder: 3,
+            Corrected: false);
+
+        var terminated = LiveStateCalculator.Compute(baseline, [.. departures, termination], At(8, 14));
+
+        Assert.Equal(JourneyStatus.Terminated, terminated.Status);
+        Assert.Null(terminated.Stops[2].ExpectedArrival);
+
+        var corrected = LiveStateCalculator.Compute(
+            baseline,
+            [.. departures, termination with { Corrected = true }],
+            At(8, 14));
+
+        Assert.Equal(JourneyStatus.Running, corrected.Status);
+        Assert.Equal(Station3, corrected.NextStationId);
+        Assert.Equal(At(8, 20), corrected.Stops[2].ExpectedArrival);
+        Assert.Equal(At(8, 22), corrected.Stops[2].ExpectedDeparture);
+        Assert.Equal(
+            Shape(LiveStateCalculator.Compute(baseline, departures, At(8, 14))),
+            Shape(corrected));
+    }
+
+    [Fact]
+    public void A_delay_published_before_a_termination_does_not_resurrect_later_stops()
+    {
+        Fact[] facts =
+        [
+            new DepartureFact(1, At(8, 0), At(8, 0), StreamOrder: 1),
+            new ChangeFact(ChangeKind.Delay, 2, 15, null, At(8, 1), StreamOrder: 2, Corrected: false),
+            new ChangeFact(ChangeKind.Termination, 3, null, null, At(8, 20), StreamOrder: 3, Corrected: false),
+        ];
+
+        var state = LiveStateCalculator.Compute(CreateBaseline(), facts, At(8, 21));
+
+        Assert.Equal(JourneyStatus.Terminated, state.Status);
+
+        // The stops the train served still show the published delay.
+        Assert.Equal(At(8, 25), state.Stops[1].ExpectedArrival);
+        Assert.Equal(At(8, 35), state.Stops[2].ExpectedArrival);
+        Assert.Equal(At(8, 37), state.Stops[2].ExpectedDeparture);
+
+        // The stops beyond the last served one show no expected time despite the delay.
+        Assert.Equal(At(8, 30), state.Stops[3].ScheduledArrival);
+        Assert.Null(state.Stops[3].ExpectedArrival);
+        Assert.Null(state.Stops[4].ExpectedArrival);
+        Assert.Null(state.Stops[4].ExpectedDeparture);
+    }
+
+    [Fact]
+    public void A_corrected_change_after_a_corrected_termination_stays_withdrawn()
+    {
+        Fact[] facts =
+        [
+            new DepartureFact(1, At(8, 0), At(8, 0), StreamOrder: 1),
+            new ChangeFact(ChangeKind.Termination, 3, null, null, At(8, 20), StreamOrder: 2, Corrected: true),
+            new ChangeFact(ChangeKind.Delay, 4, 15, null, At(8, 21), StreamOrder: 3, Corrected: true),
+        ];
+
+        var state = LiveStateCalculator.Compute(CreateBaseline(), facts, At(8, 22));
+
+        Assert.Equal(JourneyStatus.Running, state.Status);
+        Assert.Equal(Station2, state.NextStationId);
+        Assert.Equal(At(8, 30), state.Stops[3].ExpectedArrival);
+        Assert.Equal(At(8, 32), state.Stops[3].ExpectedDeparture);
+    }
+
+    [Fact]
     public void Log_synced_late()
     {
         Fact[] facts = [new DepartureFact(1, At(8, 2), At(8, 20), StreamOrder: 1)];

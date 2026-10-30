@@ -2,6 +2,7 @@
   <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Domain/SmartRail.LiveOperations.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Application/SmartRail.LiveOperations.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

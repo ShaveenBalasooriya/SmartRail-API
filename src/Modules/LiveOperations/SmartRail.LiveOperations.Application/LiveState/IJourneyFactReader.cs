@@ -4,8 +4,8 @@ namespace SmartRail.LiveOperations.Application.LiveState;
 
 /// <summary>
 /// Reads every fact recorded for one journey, in any order: the calculator orders them itself by
-/// the order they were committed in (design D1). The departure-log and status-change changes
-/// replace this change's empty implementation with one that reads their tables.
+/// the order they were committed in (design D1). The facts are the controller's published changes
+/// and the Guard's departure logs, both ordered by the shared fact sequence.
 /// </summary>
 public interface IJourneyFactReader
 {
