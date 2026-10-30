@@ -57,6 +57,27 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # --- Simulated catering provider ------------------------------------------
+  # A separate system that registers a webhook and applies what SmartRail pushes. It keeps its
+  # state in memory and reaches the API over the Compose network, never through the database.
+  simulated-provider:
+    build:
+      context: .
+      dockerfile: src/SmartRail.SimulatedProvider/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      # The API's service name inside Compose, and the same dev key the API stores a hash of.
+      SMARTRAIL_BASE_URL: http://api:8080
+      SMARTRAIL_API_KEY: "${CATERING_PROVIDER_API_KEY:?CATERING_PROVIDER_API_KEY is required}"
+      SIMULATED_PROVIDER_CALLBACK_URL: http://simulated-provider:8080/webhook
+      SIMULATED_PROVIDER_STATION_ID: ${SIMULATED_PROVIDER_STATION_ID:-04624d0f-9410-72e3-967f-501ed71f2441}
+    ports:
+      - "${SIMULATED_PROVIDER_PORT:-5081}:8080"
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
   # --- Authentik -------------------------------------------------------------
   # Its own PostgreSQL (authentik-db); the API never depends on these services.
 

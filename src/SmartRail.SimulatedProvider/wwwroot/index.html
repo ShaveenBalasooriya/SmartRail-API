@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RailBites kitchen — SmartRail simulated provider</title>
+    <style>
+        :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+        body { margin: 0; padding: 1.5rem; max-width: 70rem; margin-inline: auto; }
+        h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+        .sub { opacity: .75; margin: 0 0 1.25rem; font-size: .9rem; }
+        .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .chip { border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 999px; padding: .2rem .65rem; font-size: .8rem; }
+        .chip.bad { border-color: #c0392b; color: #c0392b; }
+        .chip.good { border-color: #1e8449; color: #1e8449; }
+        table { width: 100%; border-collapse: collapse; font-size: .9rem; margin-bottom: 2rem; }
+        th, td { text-align: left; padding: .45rem .55rem; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
+        th { font-weight: 600; opacity: .75; }
+        .status-cancelled, .status-terminated { color: #c0392b; font-weight: 600; }
+        .status-running { color: #1e8449; font-weight: 600; }
+        .muted { opacity: .6; }
+        #events td:first-child { white-space: nowrap; }
+        .outcome-applied { color: #1e8449; }
+        .outcome-ignored_duplicate, .outcome-out_of_order { color: #b9770e; }
+    </style>
+</head>
+<body>
+    <h1>RailBites kitchen</h1>
+    <p class="sub" id="subtitle">Loading…</p>
+
+    <div class="chips">
+        <span class="chip" id="registration">registration: unknown</span>
+        <span class="chip" id="failing"></span>
+        <span class="chip" id="loaded"></span>
+    </div>
+
+    <table aria-label="Journeys at this station">
+        <thead>
+            <tr>
+                <th>Journey</th>
+                <th>Line</th>
+                <th>Direction</th>
+                <th>To</th>
+                <th>Expected arrival</th>
+                <th>Platform</th>
+                <th>Status</th>
+                <th>Seq</th>
+            </tr>
+        </thead>
+        <tbody id="journeys">
+            <tr><td colspan="8" class="muted">Loading journeys…</td></tr>
+        </tbody>
+    </table>
+
+    <h2 style="font-size:1.05rem;">Received events</h2>
+    <table aria-label="Received webhook events" id="events">
+        <thead>
+            <tr>
+                <th>Received</th>
+                <th>Type</th>
+                <th>Journey</th>
+                <th>Seq</th>
+                <th>Outcome</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="5" class="muted">No events yet.</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        const time = (value) => value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+        const cell = (text) => {
+            const td = document.createElement('td');
+            td.textContent = text ?? '—';
+            return td;
+        };
+
+        function render(state) {
+            document.getElementById('subtitle').textContent =
+                `${state.station.name ?? 'Station'} · ${state.journeys.length} journey(s) calling today`;
+
+            const registration = document.getElementById('registration');
+            registration.textContent = state.registration.registered
+                ? `webhook registered · ${state.registration.subscriptionId ?? ''}`
+                : `webhook NOT registered · ${state.registration.error ?? 'unknown error'}`;
+            registration.className = `chip ${state.registration.registered ? 'good' : 'bad'}`;
+
+            const failing = document.getElementById('failing');
+            failing.textContent = state.failing ? 'failure switch: ON (503)' : 'failure switch: off';
+            failing.className = `chip ${state.failing ? 'bad' : ''}`;
+
+            document.getElementById('loaded').textContent =
+                `loaded ${state.loadedAt ? time(state.loadedAt) : 'not yet'}`;
+
+            const journeys = document.getElementById('journeys');
+            journeys.replaceChildren();
+
+            if (state.journeys.length === 0) {
+                const row = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 8;
+                td.className = 'muted';
+                td.textContent = 'No journeys loaded yet.';
+                row.append(td);
+                journeys.append(row);
+            }
+
+            for (const journey of state.journeys) {
+                const row = document.createElement('tr');
+                row.append(
+                    cell(journey.journeyId.slice(0, 8)),
+                    cell(journey.line),
+                    cell(journey.direction),
+                    cell(journey.finalDestinationName),
+                    cell(time(journey.expectedArrival)),
+                    cell(journey.platform),
+                    cell(journey.status),
+                    cell(String(journey.lastAppliedSequence)));
+
+                row.querySelector('td:nth-child(7)').className = `status-${journey.status}`;
+                journeys.append(row);
+            }
+
+            const events = document.querySelector('#events tbody');
+            events.replaceChildren();
+
+            if (state.receivedEvents.length === 0) {
+                const row = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 5;
+                td.className = 'muted';
+                td.textContent = 'No events yet.';
+                row.append(td);
+                events.append(row);
+            }
+
+            for (const event of state.receivedEvents.slice(-20).reverse()) {
+                const row = document.createElement('tr');
+                row.append(
+                    cell(time(event.receivedAt)),
+                    cell(event.type),
+                    cell(event.journeyId.slice(0, 8)),
+                    cell(String(event.sequenceNumber)),
+                    cell(event.outcome));
+
+                row.querySelector('td:last-child').className = `outcome-${event.outcome}`;
+                events.append(row);
+            }
+        }
+
+        async function poll() {
+            try {
+                const response = await fetch('/state', { cache: 'no-store' });
+
+                if (response.ok) {
+                    render(await response.json());
+                }
+            } catch {
+                document.getElementById('subtitle').textContent = 'SmartRail simulated provider is unreachable.';
+            }
+        }
+
+        poll();
+        setInterval(poll, 2000);
+    </script>
+</body>
+</html>

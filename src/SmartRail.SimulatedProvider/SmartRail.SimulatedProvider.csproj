@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The simulated catering provider (design D6, simulated-provider spec). It is deliberately a
+    separate system: no project reference to any SmartRail module, no database, and it talks to
+    SmartRail only through the provider API and its own webhook endpoint.
+  -->
+
+  <PropertyGroup>
+    <RootNamespace>SmartRail.SimulatedProvider</RootNamespace>
+  </PropertyGroup>
+
+</Project>
