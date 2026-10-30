@@ -21,6 +21,10 @@ internal sealed class LineConfiguration : IEntityTypeConfiguration<Line>
             .HasColumnName("code")
             .HasConversion(code => code.Value, value => LineCode.FromStorage(value))
             .IsRequired();
+        builder.Property(line => line.Color)
+            .HasColumnName("color")
+            .HasConversion(color => color.Value, value => LineColor.FromStorage(value))
+            .IsRequired();
         builder.Property(line => line.Name).HasColumnName("name").IsRequired();
 
         builder.HasIndex(line => line.Code).IsUnique();

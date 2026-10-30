@@ -28,6 +28,7 @@ internal sealed class NetworkRepository(RailNetworkDbContext database) : INetwor
             .Select(line => new LineDto(
                 line.Id,
                 line.Code.Value,
+                line.Color.Value,
                 line.Name,
                 line.LineStations
                     .OrderBy(lineStation => lineStation.Sequence)
@@ -111,6 +112,7 @@ internal sealed class NetworkRepository(RailNetworkDbContext database) : INetwor
                     .Select(lineStation => new StationLineDto(
                         lineStation.LineId,
                         lineStation.Line.Code.Value,
+                        lineStation.Line.Color.Value,
                         lineStation.Line.Name))
                     .ToList();
 

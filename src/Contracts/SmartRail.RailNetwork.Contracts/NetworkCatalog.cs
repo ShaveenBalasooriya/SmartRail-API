@@ -32,6 +32,7 @@ public interface INetworkCatalog
 public sealed record LineDto(
     Guid Id,
     string Code,
+    string Color,
     string Name,
     IReadOnlyList<LineStationDto> Stations);
 
@@ -61,4 +62,5 @@ public sealed record PlatformDto(
 public sealed record StationLineDto(
     Guid Id,
     string Code,
+    string Color,
     string Name);

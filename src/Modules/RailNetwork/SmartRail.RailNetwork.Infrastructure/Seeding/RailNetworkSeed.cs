@@ -50,7 +50,12 @@ internal sealed record StationSeed(Guid Id, StationCode Code, string Name, IRead
 internal sealed record PlatformSeed(Guid Id, Guid StationId, PlatformNumber Number);
 
 /// <summary>A line from <c>network.json</c> with its stations in outbound order.</summary>
-internal sealed record LineSeed(Guid Id, LineCode Code, string Name, IReadOnlyList<Guid> StationIds);
+internal sealed record LineSeed(
+    Guid Id,
+    LineCode Code,
+    LineColor Color,
+    string Name,
+    IReadOnlyList<Guid> StationIds);
 
 /// <summary>A service from <c>timetable.json</c> with its stops in running order.</summary>
 internal sealed record ServiceSeed(

@@ -199,7 +199,13 @@ internal static class RailNetworkSeedReader
                 throw InvalidRecord(path, position, label, code.Error.Description);
             }
 
-            var line = Line.Create(record.Id, code.Value, record.Name);
+            var color = LineColor.Create(record.Color);
+            if (color.IsFailure)
+            {
+                throw InvalidRecord(path, position, label, color.Error.Description);
+            }
+
+            var line = Line.Create(record.Id, code.Value, color.Value, record.Name);
             if (line.IsFailure)
             {
                 throw InvalidRecord(path, position, label, line.Error.Description);
@@ -259,7 +265,12 @@ internal static class RailNetworkSeedReader
                 stationIds.Add(station.Id);
             }
 
-            lines.Add(new LineSeed(line.Value.Id, line.Value.Code, line.Value.Name, stationIds));
+            lines.Add(new LineSeed(
+                line.Value.Id,
+                line.Value.Code,
+                line.Value.Color,
+                line.Value.Name,
+                stationIds));
         }
 
         return lines;
@@ -601,7 +612,7 @@ internal static class RailNetworkSeedReader
 
     private sealed record PlatformRecord(Guid Id, string? Number);
 
-    private sealed record LineRecord(Guid Id, string? Code, string Name, List<string?>? Stations);
+    private sealed record LineRecord(Guid Id, string? Code, string? Color, string Name, List<string?>? Stations);
 
     private sealed record TimetableFileRecord(List<ServiceRecord>? Services);
 

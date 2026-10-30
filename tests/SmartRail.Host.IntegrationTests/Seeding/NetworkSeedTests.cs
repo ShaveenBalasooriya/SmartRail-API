@@ -52,6 +52,19 @@ public sealed class NetworkSeedTests(PostgresFixture postgres)
         Assert.Equal(2, lines.GetArrayLength());
         Assert.All(lines.EnumerateArray(), line => Assert.Equal(5, line.GetProperty("stations").GetArrayLength()));
 
+        // Every line carries its display colour; the two seeded lines have the colours the seed names.
+        Assert.All(
+            lines.EnumerateArray(),
+            line => Assert.Matches("^#[0-9a-f]{6}$", line.GetProperty("color").GetString()!));
+        Assert.Equal(
+            "#1d4ed8",
+            lines.EnumerateArray().Single(line => line.GetProperty("code").GetString() == "COA")
+                .GetProperty("color").GetString());
+        Assert.Equal(
+            "#0f766e",
+            lines.EnumerateArray().Single(line => line.GetProperty("code").GetString() == "MAI")
+                .GetProperty("color").GetString());
+
         var journeys = await PollJourneysAsync(client, TodayInRailwayTime());
         Assert.Equal(52, journeys.GetArrayLength());
     }

@@ -66,6 +66,11 @@ namespace SmartRail.RailNetwork.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("code");
 
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("color");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")

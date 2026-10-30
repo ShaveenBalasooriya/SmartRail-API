@@ -22,6 +22,10 @@ public sealed class RailNetworkSeedReaderTests
         Assert.Equal(2, seed.Lines.Count);
         Assert.Equal(52, seed.Services.Count);
         Assert.Equal(260, seed.Services.Sum(service => service.Stops.Count));
+
+        // The colour is data in the seed file, read into the line like its code and name.
+        Assert.Equal("#1d4ed8", seed.Lines.Single(line => line.Code.Value == "COA").Color.Value);
+        Assert.Equal("#0f766e", seed.Lines.Single(line => line.Code.Value == "MAI").Color.Value);
     }
 
     [Fact]

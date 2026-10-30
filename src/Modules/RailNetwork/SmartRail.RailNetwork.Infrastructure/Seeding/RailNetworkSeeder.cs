@@ -150,7 +150,9 @@ internal sealed class RailNetworkSeeder(
 
     private static Line CreateLine(LineSeed line, Dictionary<Guid, Guid> stationIds)
     {
-        var created = Require(Line.Create(line.Id, line.Code, line.Name), $"line '{line.Code.Value}'");
+        var created = Require(
+            Line.Create(line.Id, line.Code, line.Color, line.Name),
+            $"line '{line.Code.Value}'");
 
         for (var index = 0; index < line.StationIds.Count; index++)
         {

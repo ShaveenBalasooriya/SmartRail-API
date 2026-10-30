@@ -16,6 +16,7 @@ using SmartRail.SharedKernel.Application.Abstractions;
 using SmartRail.SharedKernel.Application.Events;
 using SmartRail.SharedKernel.Infrastructure;
 using SmartRail.SharedKernel.Infrastructure.Events;
+using SmartRail.SharedKernel.Infrastructure.Persistence;
 
 namespace SmartRail.RailNetwork.Infrastructure;
 
@@ -46,7 +47,8 @@ public static class DependencyInjection
             .UseNpgsql(connectionString, npgsql => npgsql
                 .MigrationsAssembly(typeof(RailNetworkDbContext).Assembly.FullName)
                 .MigrationsHistoryTable("__ef_migrations_history", RailNetworkDbContext.Schema))
-            .AddOutboxSignal(provider));
+            .AddOutboxSignal(provider)
+            .AddRequestTransactionEnlistment(provider));
 
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<RailNetworkDbContext>());
         services.AddScoped<INetworkRepository, NetworkRepository>();
