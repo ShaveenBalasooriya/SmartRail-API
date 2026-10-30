@@ -4,6 +4,8 @@
     <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel.Application/SmartRail.SharedKernel.Application.csproj" />
     <ProjectReference Include="../../../Contracts/SmartRail.Catering.Contracts/SmartRail.Catering.Contracts.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.LiveOperations.Contracts/SmartRail.LiveOperations.Contracts.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.RailNetwork.Contracts/SmartRail.RailNetwork.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MediatR" />
