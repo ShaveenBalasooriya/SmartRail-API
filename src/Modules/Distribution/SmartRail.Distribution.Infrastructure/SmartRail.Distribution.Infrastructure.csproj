@@ -2,6 +2,8 @@
   <ItemGroup>
     <ProjectReference Include="../SmartRail.Distribution.Application/SmartRail.Distribution.Application.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <!-- The bus's consumer registration, which the module calls like the Audit module does. -->
+    <ProjectReference Include="../../../SmartRail.SharedKernel.Infrastructure/SmartRail.SharedKernel.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MediatR" />
