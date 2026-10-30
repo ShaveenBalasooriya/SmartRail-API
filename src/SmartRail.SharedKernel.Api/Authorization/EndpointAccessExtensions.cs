@@ -31,6 +31,11 @@ public static class EndpointAccessExtensions
     /// Serves the endpoint anonymously, applies the public rate limit and records that it is
     /// public. An <c>Authorization</c> header sent to it is ignored.
     /// </summary>
+    /// <remarks>
+    /// The policy is a fixed window counted when a request starts, so a long-lived Server-Sent
+    /// Events stream counts once per connection and the events it delivers never count
+    /// (live-event-streams spec, "Live streams count once per connection").
+    /// </remarks>
     public static TBuilder AllowAnonymousPublic<TBuilder>(this TBuilder builder)
         where TBuilder : IEndpointConventionBuilder
     {

@@ -1,8 +1,20 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using MediatR;
+using SmartRail.Audit.Contracts;
 using SmartRail.Host.Http;
+using SmartRail.IdentityAccess.Domain.Entities;
+using SmartRail.IdentityAccess.Infrastructure.Persistence;
+using SmartRail.LiveOperations.Application.LiveState.ApplyJourneyFact;
+using SmartRail.LiveOperations.Domain.Calculation;
+using SmartRail.RailNetwork.Domain.Entities;
+using SmartRail.RailNetwork.Domain.ValueObjects;
+using SmartRail.RailNetwork.Infrastructure.Persistence;
+using SmartRail.SharedKernel.Api;
 using SmartRail.SharedKernel.Api.Authorization;
 using SmartRail.SharedKernel.Application.Abstractions;
+using SmartRail.SharedKernel.Infrastructure.Persistence;
+using JourneyEventType = SmartRail.LiveOperations.Contracts.JourneyEventType;
 
 namespace SmartRail.Host.IntegrationTests.Infrastructure;
 
@@ -43,6 +55,28 @@ public sealed class TestEndpoints : IEndpointRegistration
 
     /// <summary>A provider-only route, which echoes the authenticated provider's ID.</summary>
     public const string ProviderRoute = $"{ApiRoutes.BasePath}{Prefix}/provider";
+
+    /// <summary>
+    /// A POST that writes through two module contexts and can then fail or answer 500, to prove the
+    /// request transaction spans both and rolls back.
+    /// </summary>
+    public const string TransactionWriteRoute = $"{ApiRoutes.BasePath}{Prefix}/transaction-write";
+
+    /// <summary>A GET that reports whether the request transaction is active.</summary>
+    public const string TransactionReadRoute = $"{ApiRoutes.BasePath}{Prefix}/transaction-read";
+
+    /// <summary>
+    /// A POST that records an audit entry, optionally writing a network line first, and can then
+    /// fail or answer 500, to prove the entry commits and rolls back with the caller's change.
+    /// </summary>
+    public const string AuditRecordRoute = $"{ApiRoutes.BasePath}{Prefix}/audit-record";
+
+    /// <summary>
+    /// A POST that applies a journey fact through MediatR and records an audit entry in the same
+    /// request, and can then fail or answer 500, to prove the fact, its outbox row and the entry are
+    /// one unit.
+    /// </summary>
+    public const string JourneyFactRoute = $"{ApiRoutes.BasePath}{Prefix}/journey-fact";
 
     /// <summary>The text the throwing endpoint includes in its exception, which must never escape.</summary>
     public const string FailureSecret = "internal identifier 8f2c0d1e must not leak";
@@ -108,11 +142,190 @@ public sealed class TestEndpoints : IEndpointRegistration
             .Produces<ProviderIdentityResponse>()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .RequireProvider();
+
+        group.MapPost("/transaction-write", async (
+                Guid staffId,
+                Guid lineId,
+                string? mode,
+                IdentityDbContext identity,
+                RailNetworkDbContext network) =>
+            {
+                // Both contexts save in the same request. The Host's request transaction is what
+                // makes the two writes one unit, so this route proves it rolls them back together.
+                var staff = StaffMember.Create(
+                    staffId,
+                    $"tx-subject-{staffId:N}",
+                    $"tx-user-{staffId:N}",
+                    "Transaction Test",
+                    DateTimeOffset.UtcNow).Value;
+
+                identity.StaffMembers.Add(staff);
+                await identity.SaveChangesAsync();
+
+                var line = Line.Create(
+                    lineId,
+                    LineCode.Create($"TX-{lineId:N}").Value,
+                    LineColor.Create("#64748b").Value,
+                    "Transaction Test Line").Value;
+
+                network.Lines.Add(line);
+                await network.SaveChangesAsync();
+
+                if (string.Equals(mode, "throw", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        "The transaction test endpoint failed after writing through both contexts.");
+                }
+
+                if (string.Equals(mode, "500", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.Problem(
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        title: "Transaction test failure");
+                }
+
+                return Results.Ok(new TransactionWriteResponse(staffId, lineId));
+            })
+            .WithName("TestTransactionWrite")
+            .WithSummary("Writes through two module contexts, then succeeds, throws or answers 500.")
+            .WithDescription("Test-only. Access: none.")
+            .Produces<TransactionWriteResponse>()
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+        group.MapGet("/transaction-read", (IRequestTransaction requestTransaction) =>
+                Results.Ok(new TransactionReadResponse(requestTransaction.IsActive)))
+            .WithName("TestTransactionRead")
+            .WithSummary("Reports whether this request has an active request transaction.")
+            .WithDescription("Test-only. Access: none.")
+            .Produces<TransactionReadResponse>();
+
+        group.MapPost("/audit-record", async (
+                Guid staffId,
+                string? action,
+                Guid? lineId,
+                string? mode,
+                IAuditRecorder auditRecorder,
+                RailNetworkDbContext network) =>
+            {
+                // A second module's write, so a failed request shows that the audit entry and the
+                // caller's change are one unit.
+                if (lineId is { } id)
+                {
+                    var line = Line.Create(
+                        id,
+                        LineCode.Create($"AU-{id:N}").Value,
+                        LineColor.Create("#64748b").Value,
+                        "Audit Test Line").Value;
+
+                    network.Lines.Add(line);
+                    await network.SaveChangesAsync();
+                }
+
+                var entryId = await auditRecorder.RecordAsync(new AuditRecordRequest(
+                    staffId,
+                    "network_controller",
+                    action ?? "publish_delay",
+                    "journey",
+                    Guid.CreateVersion7().ToString(),
+                    """{"status":"scheduled"}""",
+                    """{"status":"delayed","minutes":5}""",
+                    null));
+
+                if (string.Equals(mode, "throw", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        "The audit test endpoint failed after recording an entry.");
+                }
+
+                if (string.Equals(mode, "500", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.Problem(
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        title: "Audit test failure");
+                }
+
+                return Results.Ok(new AuditRecordResponse(entryId));
+            })
+            .WithName("TestAuditRecord")
+            .WithSummary("Records an audit entry, then succeeds, throws or answers 500.")
+            .WithDescription("Test-only. Access: none.")
+            .Produces<AuditRecordResponse>()
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+        group.MapPost("/journey-fact", async (
+                Guid journeyId,
+                int stopSequence,
+                DateTimeOffset departedAt,
+                Guid staffId,
+                string? mode,
+                ISender sender,
+                IAuditRecorder auditRecorder) =>
+            {
+                // The fact handler locks the journey's live-state row and writes the journey event
+                // and its outbox row; the audit entry is recorded in the same request, so this route
+                // proves the three commit or roll back together.
+                var fact = new DepartureFact(stopSequence, departedAt, DateTimeOffset.UtcNow, stopSequence);
+
+                var result = await sender.Send(new ApplyJourneyFactCommand(
+                    journeyId,
+                    fact,
+                    JourneyEventType.DepartureLogged,
+                    Guid.CreateVersion7(),
+                    fact.DepartedAt,
+                    fact.RecordedAt));
+
+                if (!result.IsSuccess)
+                {
+                    return result.ToProblemDetails();
+                }
+
+                var entryId = await auditRecorder.RecordAsync(new AuditRecordRequest(
+                    staffId,
+                    "guard",
+                    "departure_logged",
+                    "journey",
+                    journeyId.ToString(),
+                    """{"status":"scheduled"}""",
+                    """{"status":"running"}""",
+                    null));
+
+                if (string.Equals(mode, "throw", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        "The journey-fact test endpoint failed after applying the fact.");
+                }
+
+                if (string.Equals(mode, "500", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Results.Problem(
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        title: "Journey fact test failure");
+                }
+
+                return Results.Ok(new JourneyFactResponse(entryId));
+            })
+            .WithName("TestJourneyFact")
+            .WithSummary("Applies a journey fact and records an audit entry, then succeeds, throws or answers 500.")
+            .WithDescription("Test-only. Access: none.")
+            .Produces<JourneyFactResponse>()
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 }
 
 /// <summary>The provider the API key identified, as the provider test endpoint returns it.</summary>
 public sealed record ProviderIdentityResponse(string ProviderId);
+
+/// <summary>The identifiers the transaction-write test endpoint wrote.</summary>
+public sealed record TransactionWriteResponse(Guid StaffId, Guid LineId);
+
+/// <summary>Whether the request that answered this response had an active request transaction.</summary>
+public sealed record TransactionReadResponse(bool IsActive);
+
+/// <summary>The audit entry the audit test endpoint recorded.</summary>
+public sealed record AuditRecordResponse(Guid EntryId);
+
+/// <summary>The audit entry the journey-fact test endpoint recorded alongside the applied fact.</summary>
+public sealed record JourneyFactResponse(Guid EntryId);
 
 /// <summary>The payload of the JSON-conventions test endpoint.</summary>
 public sealed record ConventionsResponse(

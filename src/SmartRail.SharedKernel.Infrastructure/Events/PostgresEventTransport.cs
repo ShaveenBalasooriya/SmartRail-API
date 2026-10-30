@@ -84,13 +84,21 @@ internal sealed class PostgresEventTransport(
             .Where(message => messageIds.Contains(message.Id))
             .ToDictionaryAsync(message => message.Id, cancellationToken);
 
+        // A delivery carries no foreign key to its message. A publisher that was already reading a
+        // message when another writer removed it still records that message's deliveries, and a
+        // delivery whose message is gone can never succeed. It is skipped rather than looked up, so
+        // one removed message cannot fail every later cycle of this module's outbox.
+        var deliverable = pending
+            .Where(delivery => messages.ContainsKey(delivery.MessageId))
+            .ToList();
+
         // Per consumer and ordering key, only the earliest pending row may run: a later message
         // waits while an earlier one for the same consumer and key is pending, even when that
         // earlier one is not due yet (design D6). A failed row is no longer pending, so it releases
         // its key. Messages without a key carry no ordering promise.
         var blocked = new HashSet<(string Consumer, string OrderingKey)>();
 
-        var ordered = pending
+        var ordered = deliverable
             .Select(delivery => (Delivery: delivery, Message: messages[delivery.MessageId]))
             .OrderBy(item => item.Message.Position);
 

@@ -120,6 +120,11 @@ public sealed class SmartRailApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Cors:AllowedOrigins:0", "https://ops.smartrail.test");
         builder.UseSetting("Cors:AllowedOrigins:1", "https://display.smartrail.test");
 
+        // The journey-completion check recomputes every running journey. A test can put a journey
+        // into that status with SQL and assert on it undisturbed, so the interval is a day unless a
+        // test overrides it, and the job never ticks during the suite.
+        builder.UseSetting("Operations:CompletionCheckSeconds", "86400");
+
         // Staff authentication always has settings, so the Host starts; the test services below
         // then replace the signing key and issuer with a local one (design D11). Development and
         // E2E may use the plain-http local address; every other environment needs https.

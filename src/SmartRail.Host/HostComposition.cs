@@ -18,6 +18,7 @@ using SmartRail.RailNetwork.Api;
 using SmartRail.RailNetwork.Infrastructure;
 using SmartRail.SharedKernel.Application.Behaviors;
 using SmartRail.SharedKernel.Infrastructure;
+using SmartRail.SharedKernel.Infrastructure.Persistence;
 using SmartRail.Audit.Infrastructure.Persistence;
 using SmartRail.Catering.Infrastructure.Persistence;
 using SmartRail.IdentityAccess.Infrastructure.Persistence;
@@ -51,6 +52,10 @@ public static class HostComposition
         // The event bus's dispatcher and wake-up signal. Each publishing module adds its own
         // outbox source, so this registers the bus once and then has no module knowledge.
         services.AddEventBus();
+
+        // The one transaction a state-changing request writes in. Every module context enlists in
+        // it before saving (audit design D1, D3).
+        services.AddRequestTransaction(configuration);
 
         services.AddSmartRailProblemDetails();
         services.AddSmartRailCors(configuration);
@@ -111,6 +116,11 @@ public static class HostComposition
     public static WebApplication MapSmartRail(this WebApplication app)
     {
         ArgumentNullException.ThrowIfNull(app);
+
+        // State-changing requests run in one transaction across module contexts (audit design D1).
+        // It sits after authorisation, so a refusal's outbox write stays outside it, and applies to
+        // every endpoint mapped below, including the test-only registrations.
+        app.UseMiddleware<RequestTransactionMiddleware>();
 
         app.MapSmartRailHealth();
         app.MapSmartRailDocumentation();

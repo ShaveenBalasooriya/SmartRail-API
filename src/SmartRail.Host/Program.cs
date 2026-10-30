@@ -34,6 +34,9 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 app.UseSmartRailStatusCodePages();
 
+// Every /api/v1/public response is uncacheable, whichever component produced it (design D7).
+app.UseMiddleware<PublicResponseMiddleware>();
+
 app.UseCors(CorsConfiguration.PolicyName);
 
 app.UseMiddleware<RequestLoggingMiddleware>();
