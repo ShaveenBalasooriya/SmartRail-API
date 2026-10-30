@@ -148,6 +148,9 @@ entries:
   # The redirect URIs are the local stack's values, not production ones:
   #   - Scalar is served at http://localhost:5080/scalar/ (api-documentation spec), matched
   #     strictly so no other path on the API host can receive a code.
+  #   - The operations web app calls Authentik from the browser (discovery, token), and Authentik
+  #     only sends CORS headers for origins taken from STRICT redirect URIs, so its callback
+  #     http://localhost:5173/auth/callback is listed strictly as well (a regex alone gives no CORS).
   #   - The operations web dev server is http://localhost:5173; a regex allows any path under
   #     that origin so the frontend can pick its own callback route. It is pinned to the
   #     origin, not to "any localhost port".
@@ -167,6 +170,8 @@ entries:
       redirect_uris:
         - matching_mode: strict
           url: http://localhost:5080/scalar/
+        - matching_mode: strict
+          url: http://localhost:5173/auth/callback
         - matching_mode: regex
           url: ^http://localhost:5173/.*$
       authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
