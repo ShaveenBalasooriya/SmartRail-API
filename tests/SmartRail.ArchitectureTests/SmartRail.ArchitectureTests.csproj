@@ -26,7 +26,6 @@
     <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Domain/SmartRail.RailNetwork.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Application/SmartRail.RailNetwork.Application.csproj" />
     <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Domain/SmartRail.LiveOperations.Domain.csproj" />
-    <ProjectReference Include="../../src/Modules/LiveOperations/SmartRail.LiveOperations.Application/SmartRail.LiveOperations.Application.csproj" />
     <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Domain/SmartRail.Catering.Domain.csproj" />
     <ProjectReference Include="../../src/Modules/Catering/SmartRail.Catering.Application/SmartRail.Catering.Application.csproj" />
     <ProjectReference Include="../../src/Modules/Audit/SmartRail.Audit.Domain/SmartRail.Audit.Domain.csproj" />

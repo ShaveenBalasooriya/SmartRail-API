@@ -43,6 +43,10 @@ public static class RateLimitingConfiguration
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
+            // The public permit is acquired once, when the request starts, and held for its
+            // lifetime: a long-lived SSE stream therefore counts once per connection and its
+            // events never count (live-event-streams spec, "Live streams count once per
+            // connection").
             options.AddPolicy(Policies.PublicRateLimit, context => RateLimitPartition.GetFixedWindowLimiter(
                 PartitionKey(context.Connection.RemoteIpAddress?.ToString()),
                 _ => Window(publicPermitLimit)));

@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../SmartRail.Audit.Application/SmartRail.Audit.Application.csproj" />
+    <ProjectReference Include="../../../Contracts/SmartRail.IdentityAccess.Contracts/SmartRail.IdentityAccess.Contracts.csproj" />
     <ProjectReference Include="../../../SmartRail.SharedKernel/SmartRail.SharedKernel.csproj" />
+    <ProjectReference Include="../../../SmartRail.SharedKernel.Infrastructure/SmartRail.SharedKernel.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MediatR" />

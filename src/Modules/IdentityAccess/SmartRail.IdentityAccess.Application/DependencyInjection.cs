@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SmartRail.IdentityAccess.Application.AccessDenials;
 using SmartRail.IdentityAccess.Application.Staff;
 using SmartRail.IdentityAccess.Contracts;
 
@@ -16,6 +17,9 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddScoped<IStaffDirectory, StaffDirectoryService>();
+
+        // A handler's own refusal is announced through the module that owns the denial event.
+        services.AddScoped<IAccessDenials, AccessDenialAnnouncer>();
 
         return services;
     }

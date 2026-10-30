@@ -38,13 +38,18 @@ internal sealed class AccessDeniedAuthorizationResultHandler(
                 IntegrationEventPublisherKeys.Identity);
             var unitOfWork = context.RequestServices.GetRequiredService<IUnitOfWork>();
 
+            // One identifier for the payload and the outbox row, so a consumer can recognise a
+            // redelivery of this denial even though the bus hands it only the payload (audit D5).
+            var eventId = Guid.CreateVersion7();
+
             publisher.Publish(
                 new AccessDenied(
+                    eventId,
                     StaffIdOf(context.User),
                     context.User.FindFirstValue(SmartRailClaims.Role),
                     ActionOf(context),
                     timeProvider.GetUtcNow()),
-                Guid.CreateVersion7());
+                eventId);
 
             // A denied request has no business transaction of its own, so its outbox row is saved
             // here; the dispatcher delivers it only once this commits (design D9).
