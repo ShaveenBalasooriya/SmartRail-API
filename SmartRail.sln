@@ -111,6 +111,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartRail.SimulatedProvider
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartRail.SimulatedProvider.UnitTests", "tests\SmartRail.SimulatedProvider.UnitTests\SmartRail.SimulatedProvider.UnitTests.csproj", "{10DC1B37-714B-4DAC-97E6-EAB74759568F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartRail.IdentityAccess.UnitTests", "tests\SmartRail.IdentityAccess.UnitTests\SmartRail.IdentityAccess.UnitTests.csproj", "{A239A234-9F0F-4BB7-AE85-9954E33AC11B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -649,6 +651,18 @@ Global
 		{10DC1B37-714B-4DAC-97E6-EAB74759568F}.Release|x64.Build.0 = Release|Any CPU
 		{10DC1B37-714B-4DAC-97E6-EAB74759568F}.Release|x86.ActiveCfg = Release|Any CPU
 		{10DC1B37-714B-4DAC-97E6-EAB74759568F}.Release|x86.Build.0 = Release|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Debug|x64.Build.0 = Debug|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Debug|x86.Build.0 = Debug|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Release|x64.ActiveCfg = Release|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Release|x64.Build.0 = Release|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Release|x86.ActiveCfg = Release|Any CPU
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -706,5 +720,6 @@ Global
 		{291AFF0D-5FA5-40FA-A603-809EA15F2708} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{2F6FD2C5-F56D-4AAB-A5C8-C514044410A0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{10DC1B37-714B-4DAC-97E6-EAB74759568F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{A239A234-9F0F-4BB7-AE85-9954E33AC11B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
