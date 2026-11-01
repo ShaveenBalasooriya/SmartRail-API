@@ -8,5 +8,8 @@
   <ItemGroup>
     <PackageReference Include="MediatR" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SmartRail.Audit.UnitTests" />
+  </ItemGroup>
 </Project>
 

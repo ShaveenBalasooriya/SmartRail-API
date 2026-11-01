@@ -11,4 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" VersionOverride="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SmartRail.RailNetwork.UnitTests" />
+  </ItemGroup>
 </Project>
