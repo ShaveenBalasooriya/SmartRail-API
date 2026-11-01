@@ -176,6 +176,51 @@ public sealed class SeparationOfDutiesFlowTests : IAsyncLifetime
             "A Guard's refused delay should append no event a reconnecting client could catch up on");
     }
 
+    [FlowFact]
+    public async Task Reading_the_audit_list_is_not_a_denial()
+    {
+        // Arrange
+        var baseline = await _flow.Auditor.DeniedEntryIdsAsync(StaffDirectory.AuditorId);
+
+        // Act — the Auditor reads the record, which is the one thing the role is for.
+        var read = await _flow.Auditor.ListAsync();
+
+        // Assert
+        Verify.Ok(read, "The Auditor should be able to read the audit list");
+
+        await _flow.Auditor.NothingDeniedAfterAsync(
+            StaffDirectory.AuditorId,
+            baseline,
+            "the Auditor's accepted read of the audit list should not be recorded as a denied attempt");
+    }
+
+    [FlowFact]
+    public async Task The_audit_chain_still_verifies_after_a_denied_write()
+    {
+        // Arrange — a Guard's refused write, recorded as a denial in the audit chain.
+        var target = await _flow.Writes.ArrangeAsync(ControllerWrite.Delay);
+        var baseline = await _flow.Auditor.DeniedEntryIdsAsync(StaffDirectory.GuardId);
+
+        var refused = await _flow.Writes.AttemptAsync(ControllerWrite.Delay, StaffDirectory.Guard, target);
+        Verify.Refused(refused, "A Guard's delay on a journey should be refused");
+
+        await _flow.Auditor.WaitForNewDenialAsync(
+            StaffDirectory.GuardId,
+            "PublishDelay",
+            baseline,
+            "the Guard's refused delay should be recorded before the chain is checked");
+
+        // Act
+        var report = await _flow.Auditor.IntegrityAsync();
+
+        // Assert
+        Verify.Ok(report, "The Auditor should be able to check the audit chain");
+        Verify.Equal(
+            "intact",
+            report.Value!.Status,
+            "The audit chain should still verify after a denied write was appended to it");
+    }
+
     /// <summary>
     /// Makes the journey running through a real Guard departure and returns the stream position of the
     /// frame that departure produced: the point a client has read up to, taken from the stream itself.
