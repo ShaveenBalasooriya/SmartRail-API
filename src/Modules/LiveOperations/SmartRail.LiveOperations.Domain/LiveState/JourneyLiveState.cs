@@ -144,7 +144,7 @@ public sealed class JourneyLiveState : Entity<Guid>
     {
         ArgumentNullException.ThrowIfNull(facts);
 
-        var computed = LiveStateCalculator.Compute(CreateBaseline(), facts, now);
+        var computed = LiveStateCalculator.Compute(CreateBaseline(facts), facts, now);
         var status = MapStatus(computed.Status);
         var lastUpdatedAt = Truncate(computed.LastUpdatedAt);
 
@@ -413,23 +413,42 @@ public sealed class JourneyLiveState : Entity<Guid>
         .DefaultIfEmpty(0)
         .Max();
 
-    private Baseline CreateBaseline() => new(
-        Id,
-        ServiceDate,
-        GuardStaffId,
-        Stops
-            .OrderBy(stop => stop.Sequence)
-            .Select(stop => new BaselineStop(
-                stop.Sequence,
-                stop.StationId,
-                stop.IsCalling,
-                stop.ScheduledArrival,
-                stop.ScheduledDeparture,
-                stop.PlatformId))
-            .ToArray(),
-        // Before any fact the stored freshness is the journey's creation time, which is the
-        // calculator's fallback.
-        LastUpdatedAt);
+    private Baseline CreateBaseline(IReadOnlyList<Fact> facts)
+    {
+        // The stored platform is the one the most recent applied change left behind, not the
+        // timetable's, so it cannot be the baseline a correction falls back to. The earliest platform
+        // change for a stop records the platform it replaced, which is the original (design D3,
+        // DEF-007). A stop no platform change touched still holds its scheduled platform.
+        var originalPlatforms = facts
+            .OfType<ChangeFact>()
+            .Where(change => change.Kind == ChangeKind.PlatformChange
+                && change.StopSequence is { }
+                && change.PreviousPlatformId is { })
+            .GroupBy(change => change.StopSequence!.Value)
+            .ToDictionary(
+                group => group.Key,
+                group => group.MinBy(change => change.StreamOrder)!.PreviousPlatformId!.Value);
+
+        return new Baseline(
+            Id,
+            ServiceDate,
+            GuardStaffId,
+            Stops
+                .OrderBy(stop => stop.Sequence)
+                .Select(stop => new BaselineStop(
+                    stop.Sequence,
+                    stop.StationId,
+                    stop.IsCalling,
+                    stop.ScheduledArrival,
+                    stop.ScheduledDeparture,
+                    originalPlatforms.TryGetValue(stop.Sequence, out var originalPlatform)
+                        ? originalPlatform
+                        : stop.PlatformId))
+                .ToArray(),
+            // Before any fact the stored freshness is the journey's creation time, which is the
+            // calculator's fallback.
+            LastUpdatedAt);
+    }
 
     private bool HasChanged(
         JourneyLifecycleStatus status,

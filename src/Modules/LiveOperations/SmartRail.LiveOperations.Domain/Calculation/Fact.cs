@@ -21,6 +21,8 @@ public sealed record DepartureFact(
 /// <summary>
 /// A Network Controller change. A corrected fact has been withdrawn and is filtered out before
 /// computing, so a correction leaves the state as if the original had never been published.
+/// <see cref="PreviousPlatformId"/> is the platform a platform change replaced, which is how the
+/// timetable's platform is recovered after a change has overwritten the stored one (DEF-007).
 /// </summary>
 public sealed record ChangeFact(
     ChangeKind Kind,
@@ -29,7 +31,8 @@ public sealed record ChangeFact(
     Guid? PlatformId,
     DateTimeOffset PublishedAt,
     long StreamOrder,
-    bool Corrected) : Fact(StreamOrder);
+    bool Corrected,
+    Guid? PreviousPlatformId = null) : Fact(StreamOrder);
 
 /// <summary>The changes a Network Controller can publish in MVP 1.</summary>
 public enum ChangeKind

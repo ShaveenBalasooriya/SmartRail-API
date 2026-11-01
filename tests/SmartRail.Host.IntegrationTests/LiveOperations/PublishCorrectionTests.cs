@@ -153,6 +153,9 @@ public sealed class PublishCorrectionTests
             using var movedToB = await PostPlatformChangeAsync(client, journeyId, 2, network.BetaThree);
             Assert.Equal(HttpStatusCode.Created, movedToB.StatusCode);
 
+            var changeB = await movedToB.Content.ReadFromJsonAsync<ChangeItem>();
+            Assert.NotNull(changeB);
+
             using var corrected = await PostCorrectionAsync(client, changeA.Id, new { });
             Assert.Equal(HttpStatusCode.Created, corrected.StatusCode);
 
@@ -218,6 +221,42 @@ public sealed class PublishCorrectionTests
 
             using var after = JsonDocument.Parse(entry.After!);
             Assert.Equal("3", after.RootElement.GetProperty("platform").GetString());
+
+            // Correcting B as well withdraws the only platform change still in force. The stop has to
+            // fall back to the platform its timetable gave it, not to the one the applied change left
+            // on the row (DEF-007).
+            using var correctedB = await PostCorrectionAsync(client, changeB.Id, new { });
+            Assert.Equal(HttpStatusCode.Created, correctedB.StatusCode);
+
+            var restored = await GetDetailAsync(client, journeyId);
+            Assert.Equal(new PlatformItem(network.BetaOne, "1"), restored.Stops[1].Platform);
+
+            var storedPlatform = Assert.Single(await _postgres.QueryAsync(
+                $"""
+                SELECT platform_id
+                FROM operations.journey_stop_live_states
+                WHERE journey_id = '{journeyId}' AND sequence = 2
+                """,
+                reader => reader.IsDBNull(0) ? (Guid?)null : reader.GetGuid(0)));
+            Assert.Equal(network.BetaOne, storedPlatform);
+
+            var restoredEntry = Assert.Single(await _postgres.QueryAsync(
+                $"""
+                SELECT before::text, after::text
+                FROM audit.entries
+                WHERE target_id = '{journeyId}' AND action = 'PublishCorrection'
+                ORDER BY chain_position DESC
+                LIMIT 1
+                """,
+                reader => new AuditValues(
+                    reader.IsDBNull(0) ? null : reader.GetString(0),
+                    reader.IsDBNull(1) ? null : reader.GetString(1))));
+
+            using var restoredBefore = JsonDocument.Parse(restoredEntry.Before!);
+            Assert.Equal("3", restoredBefore.RootElement.GetProperty("platform").GetString());
+
+            using var restoredAfter = JsonDocument.Parse(restoredEntry.After!);
+            Assert.Equal("1", restoredAfter.RootElement.GetProperty("platform").GetString());
         }
         finally
         {

@@ -82,7 +82,8 @@ internal sealed class JourneyFactReader(LiveOperationsDbContext database) : IJou
                         change.NewPlatformId,
                         change.PublishedAt,
                         change.FactOrder,
-                        row.Corrected));
+                        row.Corrected,
+                        change.PreviousPlatformId));
                     break;
 
                 // A correction withdraws the change it references and contributes no fact of its own.
