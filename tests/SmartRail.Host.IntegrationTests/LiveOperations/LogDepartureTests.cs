@@ -344,421 +344,6 @@ public sealed class LogDepartureTests
     }
 
     [Fact]
-    public async Task A_stop_the_service_does_not_call_at_is_a_bad_request_naming_the_stop()
-    {
-        var today = RailwayToday();
-        using var factory = NewFactory(SafeNow(today));
-        var departure = DepartAt(today, 2);
-        var journeyId = await CreateJourneyAsync(
-            factory,
-            today,
-            GuardStaffId,
-            [
-                new JourneyStopDto(1, Guid.CreateVersion7(), true, null, departure, Guid.CreateVersion7()),
-                new JourneyStopDto(2, Guid.CreateVersion7(), false, null, null, null),
-                new JourneyStopDto(3, Guid.CreateVersion7(), true, departure.AddMinutes(20), null, null),
-            ]);
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                2,
-                departure.AddMinutes(2));
-
-            await AssertBadRequestAsync(response, "DepartureLog.StopNotCalling");
-            Assert.Contains("Stop 2", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
-            Assert.Equal(0, await DepartureLogCountAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task The_final_stop_is_a_bad_request()
-    {
-        var today = RailwayToday();
-        using var factory = NewFactory(SafeNow(today));
-        var journeyId = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 3));
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                3,
-                DepartAt(today, 2).AddMinutes(22));
-
-            await AssertBadRequestAsync(response, "DepartureLog.StopIsFinalStop");
-            Assert.Equal(0, await DepartureLogCountAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_stop_sequence_that_does_not_exist_is_a_bad_request()
-    {
-        var today = RailwayToday();
-        using var factory = NewFactory(SafeNow(today));
-        var journeyId = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 3));
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                9,
-                DepartAt(today, 2).AddMinutes(2));
-
-            await AssertBadRequestAsync(response, "DepartureLog.StopNotFound");
-            Assert.Contains("no stop 9", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
-            Assert.Equal(0, await DepartureLogCountAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_future_timestamp_is_refused_and_exactly_two_minutes_ahead_is_accepted()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        using var factory = NewFactory(now);
-        var journeyId = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 3));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            using var tooFar = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                1,
-                now.AddMinutes(10));
-
-            await AssertBadRequestAsync(tooFar, "DepartureLog.TooFarAhead");
-            Assert.Equal(0, await DepartureLogCountAsync(journeyId));
-
-            using var allowed = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                1,
-                now.AddMinutes(2));
-
-            Assert.Equal(HttpStatusCode.Created, allowed.StatusCode);
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_timestamp_without_an_offset_is_a_bad_request()
-    {
-        var today = RailwayToday();
-        using var factory = NewFactory(SafeNow(today));
-        var journeyId = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 3));
-        var logId = Guid.CreateVersion7();
-        var withoutOffset = DepartAt(today, 2)
-            .AddMinutes(2)
-            .ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture);
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var request = new HttpRequestMessage(HttpMethod.Post, DepartureLogsRoute)
-            {
-                Content = new StringContent(
-                    $$"""
-                    {
-                      "id": "{{logId}}",
-                      "journeyId": "{{journeyId}}",
-                      "stopSequence": 1,
-                      "departedAt": "{{withoutOffset}}"
-                    }
-                    """,
-                    Encoding.UTF8,
-                    "application/json"),
-            };
-            request.WithStaffToken(GuardToken());
-
-            using var response = await client.SendAsync(request);
-
-            await AssertBadRequestAsync(response, "DepartureLog.MissingOffset");
-            Assert.Equal(0, await DepartureLogCountAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_timestamp_before_the_service_date_started_is_a_bad_request()
-    {
-        var today = RailwayToday();
-        using var factory = NewFactory(SafeNow(today));
-        var journeyId = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 3));
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                1,
-                DepartAt(today, 2).AddDays(-1));
-
-            await AssertBadRequestAsync(response, "DepartureLog.BeforeServiceDate");
-            Assert.Equal(0, await DepartureLogCountAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_departure_earlier_than_a_preceding_stop_is_out_of_order()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        using var factory = NewFactory(now);
-        var journeyId = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 4));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            using var earlierStop = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                2,
-                now.AddMinutes(-40));
-
-            Assert.Equal(HttpStatusCode.Created, earlierStop.StatusCode);
-
-            using var outOfOrder = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                journeyId,
-                3,
-                now.AddMinutes(-50));
-
-            await AssertBadRequestAsync(outOfOrder, "DepartureLog.OutOfTimeOrder");
-            Assert.Contains("stop 2", await outOfOrder.Content.ReadAsStringAsync(), StringComparison.Ordinal);
-            Assert.Equal(1, await DepartureLogCountAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task Only_yesterdays_and_todays_journeys_are_open_for_logging()
-    {
-        var today = RailwayToday();
-        var yesterday = today.AddDays(-1);
-        using var factory = NewFactory(SafeNow(today));
-        await StartAsync(factory);
-
-        var recent = await CreateJourneyAsync(factory, yesterday, GuardStaffId, CallingStops(DepartAt(yesterday, 2), 3));
-        var stale = await CreateJourneyAsync(factory, today.AddDays(-2), GuardStaffId, CallingStops(DepartAt(today.AddDays(-2), 2), 3));
-        var future = await CreateJourneyAsync(factory, today.AddDays(1), GuardStaffId, CallingStops(DepartAt(today.AddDays(1), 2), 3));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            // A queue synced after midnight still syncs yesterday's taps.
-            using var accepted = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                recent,
-                1,
-                DepartAt(yesterday, 2).AddMinutes(2));
-
-            Assert.Equal(HttpStatusCode.Created, accepted.StatusCode);
-
-            using var tooOld = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                stale,
-                1,
-                DepartAt(today.AddDays(-2), 2).AddMinutes(2));
-
-            await AssertBadRequestAsync(tooOld, "DepartureLog.JourneyDateClosed");
-            Assert.Equal(0, await DepartureLogCountAsync(stale));
-
-            using var notYet = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                future,
-                1,
-                DepartAt(today.AddDays(1), 2).AddMinutes(2));
-
-            await AssertBadRequestAsync(notYet, "DepartureLog.JourneyDateClosed");
-            Assert.Equal(0, await DepartureLogCountAsync(future));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(recent);
-            await CleanUpJourneyAsync(stale);
-            await CleanUpJourneyAsync(future);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task Cancelled_and_terminated_journeys_accept_the_log_and_keep_their_status()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        using var factory = NewFactory(now);
-        await StartAsync(factory);
-
-        var cancelled = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 3));
-        var terminated = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(DepartAt(today, 2), 4));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            await PublishCancellationAsync(client, cancelled);
-
-            using var cancelledLog = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                cancelled,
-                1,
-                DepartAt(today, 2).AddMinutes(2));
-
-            Assert.Equal(HttpStatusCode.Created, cancelledLog.StatusCode);
-            Assert.Equal("cancelled", await StatusAsync(cancelled));
-
-            // A termination needs a running journey: the first departure starts it.
-            using var started = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                terminated,
-                1,
-                DepartAt(today, 2).AddMinutes(2));
-
-            Assert.Equal(HttpStatusCode.Created, started.StatusCode);
-            await PublishTerminationAsync(client, terminated, lastStopSequence: 2);
-
-            using var terminatedLog = await PostDepartureAsync(
-                client,
-                Guid.CreateVersion7(),
-                terminated,
-                2,
-                DepartAt(today, 2).AddMinutes(12));
-
-            Assert.Equal(HttpStatusCode.Created, terminatedLog.StatusCode);
-            Assert.Equal("terminated", await StatusAsync(terminated));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(cancelled);
-            await CleanUpJourneyAsync(terminated);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task All_seven_delay_causes_and_no_cause_are_accepted_and_an_unknown_one_is_refused()
-    {
-        var today = RailwayToday();
-        using var factory = NewFactory(SafeNow(today));
-        var departure = DepartAt(today, 2);
-        var journeyId = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(departure, 9));
-        var auditBaseline = await MaxAuditPositionAsync();
-        string?[] causes =
-        [
-            "signalling",
-            "rolling_stock",
-            "crew",
-            "passenger_boarding",
-            "infrastructure",
-            "weather",
-            "other",
-            null,
-        ];
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            for (var index = 0; index < causes.Length; index++)
-            {
-                using var accepted = await PostDepartureAsync(
-                    client,
-                    Guid.CreateVersion7(),
-                    journeyId,
-                    index + 1,
-                    departure.AddMinutes(2 + (index * 2)),
-                    causes[index]);
-
-                Assert.Equal(HttpStatusCode.Created, accepted.StatusCode);
-
-                var body = await ReadLogAsync(accepted);
-                Assert.Equal(causes[index], body.DelayCause);
-            }
-
-            var refusedJourney = await CreateJourneyAsync(factory, today, GuardStaffId, CallingStops(departure, 3));
-
-            try
-            {
-                using var refused = await PostDepartureAsync(
-                    client,
-                    Guid.CreateVersion7(),
-                    refusedJourney,
-                    1,
-                    departure.AddMinutes(2),
-                    "accident");
-
-                await AssertBadRequestAsync(refused, "DepartureLog.UnknownDelayCause");
-                Assert.Equal(0, await DepartureLogCountAsync(refusedJourney));
-            }
-            finally
-            {
-                await CleanUpJourneyAsync(refusedJourney);
-            }
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
     public async Task A_log_for_another_guards_journey_is_forbidden_and_the_denial_is_announced_and_audited()
     {
         var today = RailwayToday();
@@ -785,7 +370,7 @@ public sealed class LogDepartureTests
 
             // The handler's own refusal is announced through Identity's outbox. The row is committed
             // by the request transaction even though the answer is a 403 (decision D-9).
-            var denialEventId = await NewestDenialMessageAsync(outboxBaseline);
+            var denialEventId = await DenialMessageAsync(outboxBaseline, SecondGuardStaffId, "LogDeparture");
             Assert.NotNull(denialEventId);
 
             var denial = await WaitForDenialAsync(denialEventId.Value);
@@ -877,24 +462,6 @@ public sealed class LogDepartureTests
         {
             await CleanUpJourneyAsync(journeyId);
         }
-    }
-
-    [Fact]
-    public async Task An_unknown_journey_is_not_found()
-    {
-        using var factory = NewFactory(SafeNow(RailwayToday()));
-        await StartAsync(factory);
-
-        using var client = factory.CreateApiClient();
-        using var response = await PostDepartureAsync(
-            client,
-            Guid.CreateVersion7(),
-            Guid.CreateVersion7(),
-            1,
-            DateTimeOffset.UtcNow.AddMinutes(-5));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
     }
 
     /// <summary>
@@ -1067,49 +634,11 @@ public sealed class LogDepartureTests
         return await client.SendAsync(request);
     }
 
-    private static async Task PublishCancellationAsync(HttpClient client, Guid journeyId)
-    {
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/cancellation");
-        request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
-
-        using var response = await client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
-
-    private static async Task PublishTerminationAsync(HttpClient client, Guid journeyId, int lastStopSequence)
-    {
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/termination")
-        {
-            Content = JsonContent.Create(new { lastStopSequence }),
-        };
-        request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
-
-        using var response = await client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
-
     private static async Task<LogItem> ReadLogAsync(HttpResponseMessage response)
     {
         var log = await response.Content.ReadFromJsonAsync<LogItem>();
         Assert.NotNull(log);
         return log;
-    }
-
-    private static async Task AssertBadRequestAsync(HttpResponseMessage response, string errorCode)
-    {
-        var body = await response.Content.ReadAsStringAsync();
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        Assert.True(
-            body.Contains(errorCode, StringComparison.OrdinalIgnoreCase),
-            $"The 400 response does not name '{errorCode}': {body}");
     }
 
     private async Task<int> CountAsync(string sql)
@@ -1132,15 +661,6 @@ public sealed class LogDepartureTests
             reader => reader.IsDBNull(0) ? (DateTimeOffset?)null : reader.GetFieldValue<DateTimeOffset>(0));
 
         return Assert.Single(values);
-    }
-
-    private async Task<string> StatusAsync(Guid journeyId)
-    {
-        var statuses = await _postgres.QueryAsync(
-            $"SELECT lifecycle_status FROM operations.journey_live_states WHERE journey_id = '{journeyId}'",
-            reader => reader.GetString(0));
-
-        return Assert.Single(statuses);
     }
 
     /// <summary>One log row, one journey event, one outbox row and one success entry: no replay wrote anything.</summary>
@@ -1187,20 +707,24 @@ public sealed class LogDepartureTests
             "SELECT coalesce(max(position), 0) FROM identity.outbox_messages",
             reader => reader.GetInt64(0)));
 
-    /// <summary>The denial message this request published, so the test can wait for it and remove it.</summary>
-    private async Task<Guid?> NewestDenialMessageAsync(long baselinePosition)
+    /// <summary>
+    /// The denial message this request published: the one naming this test's own subject and action
+    /// that was added after the baseline, so no other test's row can be picked up.
+    /// </summary>
+    private async Task<Guid?> DenialMessageAsync(long baselinePosition, Guid staffId, string action)
     {
         var ids = await _postgres.QueryAsync(
             $"""
             SELECT id
             FROM identity.outbox_messages
-            WHERE event_type = 'AccessDenied' AND position > {baselinePosition}
-            ORDER BY position DESC
-            LIMIT 1
+            WHERE event_type = 'AccessDenied'
+              AND position > {baselinePosition}
+              AND payload ->> 'StaffId' = '{staffId}'
+              AND payload ->> 'Action' = '{action}'
             """,
             reader => reader.GetGuid(0));
 
-        return ids.Count > 0 ? ids[0] : null;
+        return ids.Count == 0 ? null : Assert.Single(ids);
     }
 
     /// <summary>

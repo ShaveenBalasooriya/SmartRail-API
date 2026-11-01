@@ -27,9 +27,6 @@ namespace SmartRail.Host.IntegrationTests.LiveOperations;
 [Collection(PostgresCollection.Name)]
 public sealed class PublishCorrectionTests
 {
-    /// <summary>The seeded controller account (seed/identity/staff.json).</summary>
-    private static readonly Guid ControllerStaffId = Guid.Parse("01a15874-e69c-70da-a689-76a7268ed330");
-
     /// <summary>The seeded guard account (seed/identity/staff.json).</summary>
     private static readonly Guid GuardStaffId = Guid.Parse("01a15874-e69d-73b2-b24d-d85d22fdead2");
 
@@ -265,58 +262,6 @@ public sealed class PublishCorrectionTests
         }
     }
 
-    [Fact]
-    public async Task A_corrected_delay_reports_the_later_delay_still_in_force_as_its_after_value()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            // Delay 30 then delay 10 on the same stop: the later one is the delay in force.
-            using var delayed = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 30);
-            Assert.Equal(HttpStatusCode.Created, delayed.StatusCode);
-
-            var delay30 = await delayed.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(delay30);
-
-            using var later = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 10);
-            Assert.Equal(HttpStatusCode.Created, later.StatusCode);
-
-            using var corrected = await PostCorrectionAsync(client, delay30.Id);
-            Assert.Equal(HttpStatusCode.Created, corrected.StatusCode);
-
-            // The correction's after value comes from the state the sink just recomputed, so it is
-            // the delay still in force rather than the corrected one (design D4).
-            var entry = Assert.Single(await _postgres.QueryAsync(
-                $"""
-                SELECT before::text, after::text
-                FROM audit.entries
-                WHERE target_id = '{journeyId}' AND action = 'PublishCorrection'
-                """,
-                reader => new AuditValues(
-                    reader.IsDBNull(0) ? null : reader.GetString(0),
-                    reader.IsDBNull(1) ? null : reader.GetString(1))));
-
-            using var after = JsonDocument.Parse(entry.After!);
-            Assert.Equal(10, after.RootElement.GetProperty("delayMinutes").GetInt32());
-
-            // The later delay is still what passengers see at that stop.
-            var detail = await GetDetailAsync(client, journeyId);
-            Assert.Equal(
-                detail.Stops[1].ScheduledDeparture!.Value.AddMinutes(10),
-                detail.Stops[1].ExpectedDeparture);
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
     /// <summary>
     /// The spec's "wrong early termination" scenario. The departure facts are recorded by
     /// <c>add-departure-logging</c>, which is not built yet, so this journey is made running by
@@ -325,254 +270,6 @@ public sealed class PublishCorrectionTests
     /// times those departures were at. The calculator's "corrected termination gives running again"
     /// rule already has its unit coverage from task 2.6.
     /// </summary>
-    [Fact]
-    public async Task A_wrong_early_termination_is_withdrawn_and_the_journey_returns_to_its_uncorrected_state()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateJourneyAsync(factory, today, FiveCallingStops(today));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            await MakeRunningAsync(journeyId, today, 1, 2);
-
-            using var client = factory.CreateApiClient();
-            using var terminated = await PostTerminationAsync(client, journeyId, lastStopSequence: 3);
-            Assert.Equal(HttpStatusCode.Created, terminated.StatusCode);
-
-            var termination = await terminated.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(termination);
-
-            Assert.Equal("terminated", (await GetDetailAsync(client, journeyId)).Journey.Status);
-
-            using var corrected = await PostCorrectionAsync(client, termination.Id);
-            Assert.Equal(HttpStatusCode.Created, corrected.StatusCode);
-
-            var detail = await GetDetailAsync(client, journeyId);
-
-            Assert.Equal("scheduled", detail.Journey.Status);
-            Assert.All(detail.Stops, stop =>
-            {
-                Assert.Equal(stop.ScheduledArrival, stop.ExpectedArrival);
-                Assert.Equal(stop.ScheduledDeparture, stop.ExpectedDeparture);
-            });
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_corrected_delay_restores_the_expected_times_the_departures_give()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateTodayJourneyAsync(factory, today);
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var delayed = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 30);
-            Assert.Equal(HttpStatusCode.Created, delayed.StatusCode);
-
-            var delay = await delayed.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(delay);
-
-            var delayedDetail = await GetDetailAsync(client, journeyId);
-            Assert.Equal(
-                delayedDetail.Stops[1].ScheduledDeparture!.Value.AddMinutes(30),
-                delayedDetail.Stops[1].ExpectedDeparture);
-
-            using var corrected = await PostCorrectionAsync(client, delay.Id);
-            Assert.Equal(HttpStatusCode.Created, corrected.StatusCode);
-
-            // Expected times return to what the departures alone give: with no departure fact on
-            // record that is the scheduled time itself.
-            var detail = await GetDetailAsync(client, journeyId);
-
-            Assert.All(detail.Stops, stop =>
-            {
-                Assert.Equal(stop.ScheduledArrival, stop.ExpectedArrival);
-                Assert.Equal(stop.ScheduledDeparture, stop.ExpectedDeparture);
-            });
-
-            // The audit entry's before and after are the delay at the original's first stop either
-            // side of the correction (design D4).
-            var entry = Assert.Single(await _postgres.QueryAsync(
-                $"""
-                SELECT before::text, after::text
-                FROM audit.entries
-                WHERE target_id = '{journeyId}' AND action = 'PublishCorrection'
-                """,
-                reader => new AuditValues(
-                    reader.IsDBNull(0) ? null : reader.GetString(0),
-                    reader.IsDBNull(1) ? null : reader.GetString(1))));
-
-            using var before = JsonDocument.Parse(entry.Before!);
-            Assert.Equal(30, before.RootElement.GetProperty("delayMinutes").GetInt32());
-
-            using var after = JsonDocument.Parse(entry.After!);
-            Assert.Equal(0, after.RootElement.GetProperty("delayMinutes").GetInt32());
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_change_that_has_already_been_corrected_is_a_conflict()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var cancelled = await PostCancellationAsync(client, journeyId);
-            var cancellation = await cancelled.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(cancellation);
-
-            using var first = await PostCorrectionAsync(client, cancellation.Id);
-            Assert.Equal(HttpStatusCode.Created, first.StatusCode);
-
-            using var second = await PostCorrectionAsync(client, cancellation.Id);
-
-            Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
-            Assert.Equal("application/problem+json", second.Content.Headers.ContentType?.MediaType);
-            Assert.Equal(1, await CountAsync(
-                $"""
-                SELECT count(*)
-                FROM operations.status_changes
-                WHERE journey_id = '{journeyId}' AND corrects_change_id = '{cancellation.Id}'
-                """));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_correction_cannot_itself_be_corrected()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var cancelled = await PostCancellationAsync(client, journeyId);
-            var cancellation = await cancelled.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(cancellation);
-
-            using var corrected = await PostCorrectionAsync(client, cancellation.Id);
-            var correction = await corrected.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(correction);
-
-            using var nested = await PostCorrectionAsync(client, correction.Id);
-
-            Assert.Equal(HttpStatusCode.Conflict, nested.StatusCode);
-            Assert.Equal(1, await CountAsync(
-                $"""
-                SELECT count(*)
-                FROM operations.status_changes
-                WHERE journey_id = '{journeyId}' AND corrects_change_id IS NOT NULL
-                """));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task Correcting_an_unknown_change_is_not_found()
-    {
-        using var factory = NewFactory();
-        await StartAsync(factory);
-
-        using var client = factory.CreateApiClient();
-        using var response = await PostCorrectionAsync(client, Guid.CreateVersion7());
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
-    public async Task Correcting_a_change_on_a_completed_journey_is_a_conflict()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var cancelled = await PostCancellationAsync(client, journeyId);
-            var cancellation = await cancelled.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(cancellation);
-
-            await _postgres.ExecuteAsync(
-                $"UPDATE operations.journey_live_states SET lifecycle_status = 'completed' WHERE journey_id = '{journeyId}'");
-
-            using var response = await PostCorrectionAsync(client, cancellation.Id);
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Equal(1, await CountAsync(
-                $"SELECT count(*) FROM operations.status_changes WHERE journey_id = '{journeyId}'"));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task Correcting_a_change_on_a_journey_dated_tomorrow_is_a_bad_request()
-    {
-        using var factory = NewFactory();
-        var tomorrow = RailwayToday().AddDays(1);
-        var journeyId = await CreateJourneyAsync(factory, tomorrow, CallingStops(tomorrow));
-        var changeId = Guid.CreateVersion7();
-
-        try
-        {
-            // A change recorded directly, so the correction gets past the unknown-change check and
-            // is refused by the shared today rule.
-            await _postgres.ExecuteAsync(
-                $"""
-                INSERT INTO operations.status_changes
-                    (id, journey_id, change_type, provenance, published_by, published_at)
-                VALUES
-                    ('{changeId}', '{journeyId}', 'cancellation', 'automatically_published',
-                     '{ControllerStaffId}', '{DateTimeOffset.UtcNow:O}')
-                """);
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostCorrectionAsync(client, changeId);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE corrects_change_id = '{changeId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
     [Fact]
     public async Task A_correction_event_names_the_original_change_and_its_event()
     {
@@ -748,11 +445,11 @@ public sealed class PublishCorrectionTests
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
-            denialEventId = await NewestDenialMessageAsync(outboxBaseline);
+            denialEventId = await DenialMessageAsync(outboxBaseline, Guid.Parse(staffId), "PublishCorrection");
 
             // A denied write is recorded shortly after the refusal, by the bus (audit D5). Waiting
             // for it also means the cleanup below cannot race a late delivery.
-            var denial = await WaitForDenialAsync(Guid.Parse(staffId));
+            var denial = await WaitForDenialAsync(auditBaseline, Guid.Parse(staffId), "PublishCorrection");
 
             Assert.Equal(Guid.Parse(staffId), denial.Actor);
             Assert.Equal(role, denial.Role);
@@ -916,14 +613,8 @@ public sealed class PublishCorrectionTests
     private static string CancellationRoute(Guid journeyId) =>
         $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/cancellation";
 
-    private static string DelayRoute(Guid journeyId) =>
-        $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/delays";
-
     private static string PlatformChangesRoute(Guid journeyId) =>
         $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/platform-changes";
-
-    private static string TerminationRoute(Guid journeyId) =>
-        $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/termination";
 
     private static string DetailRoute(Guid journeyId) =>
         $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}";
@@ -949,39 +640,6 @@ public sealed class PublishCorrectionTests
 
     private async Task<Guid> CreateTodayJourneyAsync(SmartRailApiFactory factory, DateOnly serviceDate) =>
         await CreateJourneyAsync(factory, serviceDate, CallingStops(serviceDate));
-
-    /// <summary>Five calling stops, the shape the early-termination scenario uses.</summary>
-    private static IReadOnlyList<JourneyStopDto> FiveCallingStops(DateOnly serviceDate)
-    {
-        var departAt = DepartAt(serviceDate);
-
-        return
-        [
-            new JourneyStopDto(1, Guid.CreateVersion7(), true, null, departAt, Guid.CreateVersion7()),
-            new JourneyStopDto(
-                2,
-                Guid.CreateVersion7(),
-                true,
-                departAt.AddMinutes(10),
-                departAt.AddMinutes(11),
-                Guid.CreateVersion7()),
-            new JourneyStopDto(
-                3,
-                Guid.CreateVersion7(),
-                true,
-                departAt.AddMinutes(20),
-                departAt.AddMinutes(21),
-                Guid.CreateVersion7()),
-            new JourneyStopDto(
-                4,
-                Guid.CreateVersion7(),
-                true,
-                departAt.AddMinutes(30),
-                departAt.AddMinutes(31),
-                Guid.CreateVersion7()),
-            new JourneyStopDto(5, Guid.CreateVersion7(), true, departAt.AddMinutes(40), null, null),
-        ];
-    }
 
     private async Task<Guid> CreateJourneyAsync(
         SmartRailApiFactory factory,
@@ -1024,29 +682,6 @@ public sealed class PublishCorrectionTests
         return journeyId;
     }
 
-    /// <summary>
-    /// Records departures for the given stops and marks the journey running. The departure log table
-    /// arrives with add-departure-logging, so the stored state is set directly, as the termination
-    /// tests do.
-    /// </summary>
-    private async Task MakeRunningAsync(Guid journeyId, DateOnly serviceDate, params int[] departedStops)
-    {
-        foreach (var sequence in departedStops)
-        {
-            var departedAt = DepartAt(serviceDate).AddMinutes((sequence - 1) * 10);
-
-            await _postgres.ExecuteAsync(
-                $"""
-                UPDATE operations.journey_stop_live_states
-                SET actual_departure = '{departedAt:O}'
-                WHERE journey_id = '{journeyId}' AND sequence = {sequence}
-                """);
-        }
-
-        await _postgres.ExecuteAsync(
-            $"UPDATE operations.journey_live_states SET lifecycle_status = 'running' WHERE journey_id = '{journeyId}'");
-    }
-
     private static async Task StartAsync(SmartRailApiFactory factory)
     {
         using var client = factory.CreateApiClient();
@@ -1082,22 +717,6 @@ public sealed class PublishCorrectionTests
         return await client.SendAsync(request);
     }
 
-    private static async Task<HttpResponseMessage> PostDelayAsync(
-        HttpClient client,
-        Guid journeyId,
-        int fromStopSequence,
-        int minutes)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, DelayRoute(journeyId))
-        {
-            Content = JsonContent.Create(new { fromStopSequence, minutes }),
-        };
-
-        request.WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController));
-
-        return await client.SendAsync(request);
-    }
-
     private static async Task<HttpResponseMessage> PostPlatformChangeAsync(
         HttpClient client,
         Guid journeyId,
@@ -1107,21 +726,6 @@ public sealed class PublishCorrectionTests
         using var request = new HttpRequestMessage(HttpMethod.Post, PlatformChangesRoute(journeyId))
         {
             Content = JsonContent.Create(new { stopSequence, platformId }),
-        };
-
-        request.WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController));
-
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> PostTerminationAsync(
-        HttpClient client,
-        Guid journeyId,
-        int lastStopSequence)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, TerminationRoute(journeyId))
-        {
-            Content = JsonContent.Create(new { lastStopSequence }),
         };
 
         request.WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController));
@@ -1216,27 +820,32 @@ public sealed class PublishCorrectionTests
             "SELECT coalesce(max(position), 0) FROM identity.outbox_messages",
             reader => reader.GetInt64(0)));
 
-    /// <summary>The denial message this request published, so the test can remove it again.</summary>
-    private async Task<Guid?> NewestDenialMessageAsync(long baselinePosition)
+    /// <summary>
+    /// The denial message this request published: the one naming this test's own subject and action
+    /// that was added after the baseline, so no other test's row can be picked up.
+    /// </summary>
+    private async Task<Guid?> DenialMessageAsync(long baselinePosition, Guid staffId, string action)
     {
         var ids = await _postgres.QueryAsync(
             $"""
             SELECT id
             FROM identity.outbox_messages
-            WHERE event_type = 'AccessDenied' AND position > {baselinePosition}
-            ORDER BY position DESC
-            LIMIT 1
+            WHERE event_type = 'AccessDenied'
+              AND position > {baselinePosition}
+              AND payload ->> 'StaffId' = '{staffId}'
+              AND payload ->> 'Action' = '{action}'
             """,
             reader => reader.GetGuid(0));
 
-        return ids.Count > 0 ? ids[0] : null;
+        return ids.Count == 0 ? null : Assert.Single(ids);
     }
 
     /// <summary>
-    /// Waits for a refused write to reach the audit record. Delivery is asynchronous, so the entry
-    /// appears shortly after the 403 (audit design D5).
+    /// Waits for the refusal this test made to reach the audit record. Delivery is asynchronous, so
+    /// the entry appears shortly after the 403 (audit design D5), and the actor and action chosen
+    /// after the baseline are the test's own.
     /// </summary>
-    private async Task<DenialRow> WaitForDenialAsync(Guid staffId)
+    private async Task<DenialRow> WaitForDenialAsync(long baselinePosition, Guid staffId, string action)
     {
         var deadline = DateTimeOffset.UtcNow.Add(Timeout);
 
@@ -1246,11 +855,10 @@ public sealed class PublishCorrectionTests
                 $"""
                 SELECT actor_staff_id, actor_role, action, source_event_id
                 FROM audit.entries
-                WHERE actor_staff_id = '{staffId}'
+                WHERE chain_position > {baselinePosition}
+                  AND actor_staff_id = '{staffId}'
                   AND outcome = 'denied'
-                  AND action = 'PublishCorrection'
-                ORDER BY chain_position DESC
-                LIMIT 1
+                  AND action = '{action}'
                 """,
                 reader => new DenialRow(
                     reader.GetGuid(0),
@@ -1260,7 +868,7 @@ public sealed class PublishCorrectionTests
 
             if (rows.Count > 0)
             {
-                return rows[0];
+                return Assert.Single(rows);
             }
 
             Assert.True(

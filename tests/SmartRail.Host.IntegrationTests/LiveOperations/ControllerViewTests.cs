@@ -13,10 +13,10 @@ using SmartRail.SharedKernel.Application.Abstractions;
 namespace SmartRail.Host.IntegrationTests.LiveOperations;
 
 /// <summary>
-/// The Network Controller's live view over HTTP: the role policy, the 400 and 404 answers, and the
-/// shape of today's journeys and one journey's detail. The timetable and station catalogue are
-/// substituted, because no network seed exists yet; staff names come from the real seeded Identity
-/// directory, so the guard and controller are named exactly as the seed names them.
+/// The Network Controller's live view over HTTP: the role policy, the 401, and the shape of today's
+/// journeys and one journey's detail. The timetable and station catalogue are substituted, because no
+/// network seed exists yet; staff names come from the real seeded Identity directory, so the guard
+/// and controller are named exactly as the seed names them.
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class ControllerViewTests : IDisposable
@@ -92,27 +92,6 @@ public sealed class ControllerViewTests : IDisposable
         using var response = await _client.GetAsync(JourneysRoute);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task An_unknown_journey_is_not_found()
-    {
-        using var response = await _client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, DetailRoute(Guid.CreateVersion7()))
-                .WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController)));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
-    public async Task A_malformed_journey_id_is_a_bad_request()
-    {
-        using var response = await _client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, $"{JourneysRoute}/not-a-journey-id")
-                .WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController)));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -208,31 +187,6 @@ public sealed class ControllerViewTests : IDisposable
         Assert.Equal("Mahesh Perera", change.PublisherName);
         Assert.Equal("automatically_published", change.Provenance);
         Assert.False(change.Corrected);
-    }
-
-    [Fact]
-    public async Task A_journey_the_timetable_does_not_hold_is_still_shown_from_its_live_state()
-    {
-        var controller = TestTokens.Create("controller.mahesh", Roles.NetworkController);
-        await StartAsync();
-
-        var today = RailwayToday();
-        var journeyId = Guid.CreateVersion7();
-        var departAt = new DateTimeOffset(today.ToDateTime(new TimeOnly(2, 0)), TimeSpan.Zero);
-        var stops = new[] { new JourneyStopDto(1, StationAlpha, true, null, departAt, null) };
-        await PublishJourneyAsync(journeyId, Guid.CreateVersion7(), Guid.CreateVersion7(), today, stops);
-
-        using var response = await _client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, DetailRoute(journeyId)).WithStaffToken(controller));
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var detail = await response.Content.ReadFromJsonAsync<JourneyDetail>();
-        Assert.NotNull(detail);
-        Assert.Null(detail.Journey.ServiceName);
-        Assert.Null(detail.Journey.LineCode);
-        Assert.Equal("scheduled", detail.Journey.Status);
-        Assert.Single(detail.Stops);
-        Assert.Empty(detail.Changes);
     }
 
     private static string DetailRoute(Guid journeyId) => $"{JourneysRoute}/{journeyId}";

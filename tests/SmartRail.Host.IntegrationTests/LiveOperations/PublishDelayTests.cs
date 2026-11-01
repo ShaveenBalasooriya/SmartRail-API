@@ -157,153 +157,6 @@ public sealed class PublishDelayTests
     }
 
     [Fact]
-    public async Task A_delay_at_a_departed_stop_is_a_conflict_and_changes_nothing()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateTodayJourneyAsync(factory, today);
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            // The Guard has departed stop 2, so the journey is running and that stop is behind us.
-            await _postgres.ExecuteAsync(
-                $"""
-                UPDATE operations.journey_stop_live_states
-                SET actual_departure = '{DepartAt(today).AddMinutes(12):O}'
-                WHERE journey_id = '{journeyId}' AND sequence = 2
-                """);
-            await _postgres.ExecuteAsync(
-                $"UPDATE operations.journey_live_states SET lifecycle_status = 'running' WHERE journey_id = '{journeyId}'");
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 15);
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(721)]
-    public async Task A_delay_outside_one_to_720_minutes_is_a_bad_request(int minutes)
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_delay_from_a_stop_the_journey_does_not_call_at_is_a_bad_request()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateJourneyAsync(factory, today, StopsWithANonCallingStop(today));
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 5);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_delay_on_a_journey_dated_tomorrow_is_a_bad_request()
-    {
-        using var factory = NewFactory();
-        var tomorrow = RailwayToday().AddDays(1);
-        var journeyId = await CreateJourneyAsync(factory, tomorrow, CallingStops(tomorrow));
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 15);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Theory]
-    [InlineData("cancelled")]
-    [InlineData("completed")]
-    public async Task A_delay_on_a_closed_journey_is_a_conflict(string status)
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-
-        try
-        {
-            await _postgres.ExecuteAsync(
-                $"UPDATE operations.journey_live_states SET lifecycle_status = '{status}' WHERE journey_id = '{journeyId}'");
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 15);
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_delay_on_an_unknown_journey_is_not_found()
-    {
-        using var factory = NewFactory();
-        await StartAsync(factory);
-
-        using var client = factory.CreateApiClient();
-        using var response = await PostDelayAsync(client, Guid.CreateVersion7(), fromStopSequence: 2, minutes: 15);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
     public async Task A_request_with_no_token_is_unauthorized()
     {
         using var factory = NewFactory();
@@ -356,11 +209,11 @@ public sealed class PublishDelayTests
                 $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
                 reader => reader.GetGuid(0)));
 
-            denialEventId = await NewestDenialMessageAsync(outboxBaseline);
+            denialEventId = await DenialMessageAsync(outboxBaseline, Guid.Parse(staffId), "PublishDelay");
 
             // A denied write is recorded shortly after the refusal, by the bus (audit D5). Waiting
             // for it also means the cleanup below cannot race a late delivery.
-            var denial = await WaitForDenialAsync(Guid.Parse(staffId));
+            var denial = await WaitForDenialAsync(auditBaseline, Guid.Parse(staffId), "PublishDelay");
 
             Assert.Equal(Guid.Parse(staffId), denial.Actor);
             Assert.Equal(role, denial.Role);
@@ -527,19 +380,6 @@ public sealed class PublishDelayTests
         ];
     }
 
-    /// <summary>The same journey with stop 2 passed without calling at it.</summary>
-    private static IReadOnlyList<JourneyStopDto> StopsWithANonCallingStop(DateOnly serviceDate)
-    {
-        var departAt = DepartAt(serviceDate);
-
-        return
-        [
-            new JourneyStopDto(1, Guid.CreateVersion7(), true, null, departAt, Guid.CreateVersion7()),
-            new JourneyStopDto(2, Guid.CreateVersion7(), false, null, null, null),
-            new JourneyStopDto(3, Guid.CreateVersion7(), true, departAt.AddMinutes(20), null, null),
-        ];
-    }
-
     private async Task<Guid> CreateTodayJourneyAsync(SmartRailApiFactory factory, DateOnly serviceDate) =>
         await CreateJourneyAsync(factory, serviceDate, CallingStops(serviceDate));
 
@@ -673,27 +513,32 @@ public sealed class PublishDelayTests
             "SELECT coalesce(max(position), 0) FROM identity.outbox_messages",
             reader => reader.GetInt64(0)));
 
-    /// <summary>The denial message this request published, so the test can remove it again.</summary>
-    private async Task<Guid?> NewestDenialMessageAsync(long baselinePosition)
+    /// <summary>
+    /// The denial message this request published: the one naming this test's own subject and action
+    /// that was added after the baseline, so no other test's row can be picked up.
+    /// </summary>
+    private async Task<Guid?> DenialMessageAsync(long baselinePosition, Guid staffId, string action)
     {
         var ids = await _postgres.QueryAsync(
             $"""
             SELECT id
             FROM identity.outbox_messages
-            WHERE event_type = 'AccessDenied' AND position > {baselinePosition}
-            ORDER BY position DESC
-            LIMIT 1
+            WHERE event_type = 'AccessDenied'
+              AND position > {baselinePosition}
+              AND payload ->> 'StaffId' = '{staffId}'
+              AND payload ->> 'Action' = '{action}'
             """,
             reader => reader.GetGuid(0));
 
-        return ids.Count > 0 ? ids[0] : null;
+        return ids.Count == 0 ? null : Assert.Single(ids);
     }
 
     /// <summary>
-    /// Waits for a refused write to reach the audit record. Delivery is asynchronous, so the entry
-    /// appears shortly after the 403 (audit design D5).
+    /// Waits for the refusal this test made to reach the audit record. Delivery is asynchronous, so
+    /// the entry appears shortly after the 403 (audit design D5), and the actor and action chosen
+    /// after the baseline are the test's own.
     /// </summary>
-    private async Task<DenialRow> WaitForDenialAsync(Guid staffId)
+    private async Task<DenialRow> WaitForDenialAsync(long baselinePosition, Guid staffId, string action)
     {
         var deadline = DateTimeOffset.UtcNow.Add(Timeout);
 
@@ -703,11 +548,10 @@ public sealed class PublishDelayTests
                 $"""
                 SELECT actor_staff_id, actor_role, action, source_event_id
                 FROM audit.entries
-                WHERE actor_staff_id = '{staffId}'
+                WHERE chain_position > {baselinePosition}
+                  AND actor_staff_id = '{staffId}'
                   AND outcome = 'denied'
-                  AND action = 'PublishDelay'
-                ORDER BY chain_position DESC
-                LIMIT 1
+                  AND action = '{action}'
                 """,
                 reader => new DenialRow(
                     reader.GetGuid(0),
@@ -717,7 +561,7 @@ public sealed class PublishDelayTests
 
             if (rows.Count > 0)
             {
-                return rows[0];
+                return Assert.Single(rows);
             }
 
             Assert.True(

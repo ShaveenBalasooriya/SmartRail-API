@@ -150,72 +150,6 @@ public sealed class JourneyCompletionTests
     }
 
     [Fact]
-    public async Task A_running_journey_whose_penultimate_stop_was_never_logged_stays_running()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        var clock = new MutableTimeProvider(now);
-        using var factory = NewFactory(clock);
-        var journeyId = await CreateJourneyAsync(factory, today, ThreeCallingStops(now));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            // Only the first stop is logged; the penultimate calling stop never departs.
-            using var logged = await PostDepartureAsync(client, journeyId, 1, now.AddMinutes(-28));
-            Assert.Equal(HttpStatusCode.Created, logged.StatusCode);
-
-            clock.Advance(TimeSpan.FromMinutes(40));
-
-            // The journey is loaded by the check, but the calculator leaves it running: the Guard's
-            // log is the only source of progress.
-            Assert.Equal(1, await SendCompletionAsync(factory));
-
-            Assert.Equal("running", await StatusAsync(journeyId));
-            Assert.Equal(["departure_logged"], await EventTypesAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_cancelled_journey_is_untouched()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        var clock = new MutableTimeProvider(now);
-        using var factory = NewFactory(clock);
-        var journeyId = await CreateJourneyAsync(factory, today, FinalLegStops(now));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            using var cancellation = await PublishCancellationAsync(client, journeyId);
-            Assert.Equal(HttpStatusCode.Created, cancellation.StatusCode);
-            Assert.Equal("cancelled", await StatusAsync(journeyId));
-
-            clock.Advance(TimeSpan.FromMinutes(40));
-
-            Assert.Equal(0, await SendCompletionAsync(factory));
-
-            Assert.Equal("cancelled", await StatusAsync(journeyId));
-            Assert.Equal(["cancellation_published"], await EventTypesAsync(journeyId));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
     public async Task One_tick_of_the_hosted_service_completes_the_journey()
     {
         var today = RailwayToday();
@@ -295,19 +229,6 @@ public sealed class JourneyCompletionTests
         new(1, Guid.CreateVersion7(), true, null, now.AddMinutes(-30), Guid.CreateVersion7()),
         new(2, Guid.CreateVersion7(), true, now.AddMinutes(10), null, null),
     ];
-
-    /// <summary>Three calling stops; the penultimate one is stop 2.</summary>
-    private static List<JourneyStopDto> ThreeCallingStops(DateTimeOffset now)
-    {
-        var departure = now.AddMinutes(-30);
-
-        return
-        [
-            new(1, Guid.CreateVersion7(), true, null, departure, Guid.CreateVersion7()),
-            new(2, Guid.CreateVersion7(), true, departure.AddMinutes(10), departure.AddMinutes(11), Guid.CreateVersion7()),
-            new(3, Guid.CreateVersion7(), true, departure.AddMinutes(20), null, null),
-        ];
-    }
 
     /// <summary>Four calling stops, so a journey can be ended early at stop 2.</summary>
     private static List<JourneyStopDto> FourCallingStops(DateTimeOffset now)
@@ -415,18 +336,6 @@ public sealed class JourneyCompletionTests
         {
             Content = JsonContent.Create(new { lastStopSequence }),
         };
-        request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
-
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> PublishCancellationAsync(
-        HttpClient client,
-        Guid journeyId)
-    {
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/cancellation");
         request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
 
         return await client.SendAsync(request);

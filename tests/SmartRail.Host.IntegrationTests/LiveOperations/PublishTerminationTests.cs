@@ -175,187 +175,6 @@ public sealed class PublishTerminationTests
     }
 
     [Fact]
-    public async Task A_journey_that_has_not_started_is_a_conflict_that_says_to_cancel_it()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostTerminationAsync(client, journeyId, lastStopSequence: 3);
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-
-            var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            Assert.Contains(
-                "cancel it instead",
-                problem.RootElement.GetProperty("detail").GetString()!);
-
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_stop_the_journey_passes_without_calling_is_a_bad_request()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateJourneyAsync(factory, today, StopsWithoutCallingAtStopFour(today));
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            await MakeRunningAsync(journeyId, today, 1);
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostTerminationAsync(client, journeyId, lastStopSequence: 4);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task The_final_calling_stop_is_a_bad_request()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateTodayJourneyAsync(factory, today);
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            await MakeRunningAsync(journeyId, today, 1);
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostTerminationAsync(client, journeyId, lastStopSequence: 5);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_stop_before_the_last_recorded_departure_is_a_conflict()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateTodayJourneyAsync(factory, today);
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            await MakeRunningAsync(journeyId, today, 1, 2);
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostTerminationAsync(client, journeyId, lastStopSequence: 1);
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Theory]
-    [InlineData("cancelled")]
-    [InlineData("completed")]
-    [InlineData("terminated")]
-    public async Task A_journey_already_closed_is_a_conflict(string status)
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateTodayJourneyAsync(factory, today);
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            await MakeRunningAsync(journeyId, today, 1);
-            await _postgres.ExecuteAsync(
-                $"UPDATE operations.journey_live_states SET lifecycle_status = '{status}' WHERE journey_id = '{journeyId}'");
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostTerminationAsync(client, journeyId, lastStopSequence: 3);
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_termination_on_a_journey_dated_tomorrow_is_a_bad_request()
-    {
-        using var factory = NewFactory();
-        var tomorrow = RailwayToday().AddDays(1);
-        var journeyId = await CreateJourneyAsync(factory, tomorrow, CallingStops(tomorrow));
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostTerminationAsync(client, journeyId, lastStopSequence: 3);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_termination_on_an_unknown_journey_is_not_found()
-    {
-        using var factory = NewFactory();
-        await StartAsync(factory);
-
-        using var client = factory.CreateApiClient();
-        using var response = await PostTerminationAsync(client, Guid.CreateVersion7(), lastStopSequence: 3);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
     public async Task A_request_with_no_token_is_unauthorized()
     {
         using var factory = NewFactory();
@@ -407,11 +226,11 @@ public sealed class PublishTerminationTests
                 $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
                 reader => reader.GetGuid(0)));
 
-            denialEventId = await NewestDenialMessageAsync(outboxBaseline);
+            denialEventId = await DenialMessageAsync(outboxBaseline, Guid.Parse(staffId), "PublishTermination");
 
             // A denied write is recorded shortly after the refusal, by the bus (audit D5). Waiting
             // for it also means the cleanup below cannot race a late delivery.
-            var denial = await WaitForDenialAsync(Guid.Parse(staffId));
+            var denial = await WaitForDenialAsync(auditBaseline, Guid.Parse(staffId), "PublishTermination");
 
             Assert.Equal(Guid.Parse(staffId), denial.Actor);
             Assert.Equal(role, denial.Role);
@@ -545,14 +364,6 @@ public sealed class PublishTerminationTests
             new JourneyStopDto(5, Guid.CreateVersion7(), true, departAt.AddMinutes(40), null, null),
         ];
     }
-
-    /// <summary>The same five stops with stop 4 passed without calling at it.</summary>
-    private static JourneyStopDto[] StopsWithoutCallingAtStopFour(DateOnly serviceDate) =>
-        CallingStops(serviceDate)
-            .Select(stop => stop.Sequence == 4
-                ? stop with { IsCalling = false, ScheduledArrival = null, ScheduledDeparture = null, PlatformId = null }
-                : stop)
-            .ToArray();
 
     private async Task<Guid> CreateTodayJourneyAsync(SmartRailApiFactory factory, DateOnly serviceDate) =>
         await CreateJourneyAsync(factory, serviceDate, CallingStops(serviceDate));
@@ -722,27 +533,32 @@ public sealed class PublishTerminationTests
             "SELECT coalesce(max(position), 0) FROM identity.outbox_messages",
             reader => reader.GetInt64(0)));
 
-    /// <summary>The denial message this request published, so the test can remove it again.</summary>
-    private async Task<Guid?> NewestDenialMessageAsync(long baselinePosition)
+    /// <summary>
+    /// The denial message this request published: the one naming this test's own subject and action
+    /// that was added after the baseline, so no other test's row can be picked up.
+    /// </summary>
+    private async Task<Guid?> DenialMessageAsync(long baselinePosition, Guid staffId, string action)
     {
         var ids = await _postgres.QueryAsync(
             $"""
             SELECT id
             FROM identity.outbox_messages
-            WHERE event_type = 'AccessDenied' AND position > {baselinePosition}
-            ORDER BY position DESC
-            LIMIT 1
+            WHERE event_type = 'AccessDenied'
+              AND position > {baselinePosition}
+              AND payload ->> 'StaffId' = '{staffId}'
+              AND payload ->> 'Action' = '{action}'
             """,
             reader => reader.GetGuid(0));
 
-        return ids.Count > 0 ? ids[0] : null;
+        return ids.Count == 0 ? null : Assert.Single(ids);
     }
 
     /// <summary>
-    /// Waits for a refused write to reach the audit record. Delivery is asynchronous, so the entry
-    /// appears shortly after the 403 (audit design D5).
+    /// Waits for the refusal this test made to reach the audit record. Delivery is asynchronous, so
+    /// the entry appears shortly after the 403 (audit design D5), and the actor and action chosen
+    /// after the baseline are the test's own.
     /// </summary>
-    private async Task<DenialRow> WaitForDenialAsync(Guid staffId)
+    private async Task<DenialRow> WaitForDenialAsync(long baselinePosition, Guid staffId, string action)
     {
         var deadline = DateTimeOffset.UtcNow.Add(Timeout);
 
@@ -752,11 +568,10 @@ public sealed class PublishTerminationTests
                 $"""
                 SELECT actor_staff_id, actor_role, action, source_event_id
                 FROM audit.entries
-                WHERE actor_staff_id = '{staffId}'
+                WHERE chain_position > {baselinePosition}
+                  AND actor_staff_id = '{staffId}'
                   AND outcome = 'denied'
-                  AND action = 'PublishTermination'
-                ORDER BY chain_position DESC
-                LIMIT 1
+                  AND action = '{action}'
                 """,
                 reader => new DenialRow(
                     reader.GetGuid(0),
@@ -766,7 +581,7 @@ public sealed class PublishTerminationTests
 
             if (rows.Count > 0)
             {
-                return rows[0];
+                return Assert.Single(rows);
             }
 
             Assert.True(

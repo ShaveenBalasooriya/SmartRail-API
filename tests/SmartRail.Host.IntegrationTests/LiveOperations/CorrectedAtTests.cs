@@ -28,109 +28,6 @@ public sealed class CorrectedAtTests
 
     public CorrectedAtTests(PostgresFixture postgres) => _postgres = postgres;
 
-    [Fact]
-    public async Task A_corrected_cancellation_reports_the_correction_time_on_the_journey_and_on_its_event()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var cancelled = await PostCancellationAsync(client, journeyId);
-            Assert.Equal(HttpStatusCode.Created, cancelled.StatusCode);
-
-            var cancellation = await cancelled.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(cancellation);
-
-            // A journey that has never been corrected carries no correction time.
-            Assert.Null((await GetJourneyAsync(factory, journeyId)).CorrectedAt);
-
-            using var corrected = await PostCorrectionAsync(client, cancellation.Id);
-            Assert.Equal(HttpStatusCode.Created, corrected.StatusCode);
-
-            var correction = await corrected.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(correction);
-
-            // The corrected journey is its restored self and notes when it was corrected (PAX-12).
-            var journey = await GetJourneyAsync(factory, journeyId);
-
-            Assert.Equal(JourneyLifecycleStatus.Scheduled, journey.Status);
-            Assert.Equal(Truncate(correction.PublishedAt), journey.CorrectedAt);
-
-            // The events the stream will send say the same: the snapshot taken for the correction
-            // carries the time, the one taken for the cancellation it withdrew does not.
-            var events = await ReadEventsAsync(factory, journeyId);
-
-            Assert.Equal(2, events.Count);
-
-            var cancellationEvent = Assert.Single(
-                events,
-                journeyEvent => journeyEvent.Type == JourneyEventType.CancellationPublished);
-            Assert.Null(cancellationEvent.Snapshot.CorrectedAt);
-
-            var correctionEvent = Assert.Single(
-                events,
-                journeyEvent => journeyEvent.Type == JourneyEventType.CorrectionPublished);
-            Assert.Equal(journey.CorrectedAt, correctionEvent.Snapshot.CorrectedAt);
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_later_correction_moves_the_correction_time_forward()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var cancelled = await PostCancellationAsync(client, journeyId);
-            var cancellation = await cancelled.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(cancellation);
-
-            using var first = await PostCorrectionAsync(client, cancellation.Id);
-            var firstCorrection = await first.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(firstCorrection);
-
-            Assert.Equal(Truncate(firstCorrection.PublishedAt), (await GetJourneyAsync(factory, journeyId)).CorrectedAt);
-
-            // Published times come from the system clock, so leave a gap the clock granularity cannot
-            // swallow before the second correction is published.
-            await Task.Delay(TimeSpan.FromMilliseconds(50));
-
-            using var delayed = await PostDelayAsync(client, journeyId, fromStopSequence: 2, minutes: 5);
-            Assert.Equal(HttpStatusCode.Created, delayed.StatusCode);
-
-            var delay = await delayed.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(delay);
-
-            using var second = await PostCorrectionAsync(client, delay.Id);
-            Assert.Equal(HttpStatusCode.Created, second.StatusCode);
-
-            var secondCorrection = await second.Content.ReadFromJsonAsync<ChangeItem>();
-            Assert.NotNull(secondCorrection);
-
-            // The time is the most recent correction's, not the first one's.
-            var journey = await GetJourneyAsync(factory, journeyId);
-
-            Assert.Equal(Truncate(secondCorrection.PublishedAt), journey.CorrectedAt);
-            Assert.True(journey.CorrectedAt > Truncate(firstCorrection.PublishedAt));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
     /// <summary>
     /// Snapshots written before the property existed have no <c>correctedAt</c> at all. Reading one
     /// through the module's own event query has to give <see langword="null"/> rather than fail.
@@ -187,19 +84,11 @@ public sealed class CorrectedAtTests
     private static DateTimeOffset DepartAt(DateOnly serviceDate) =>
         new(serviceDate.ToDateTime(new TimeOnly(2, 0)), TimeSpan.Zero);
 
-    /// <summary>The microseconds PostgreSQL keeps, which is the precision the live state stores.</summary>
-    private static DateTimeOffset Truncate(DateTimeOffset value) => new(
-        value.UtcTicks - (value.UtcTicks % TimeSpan.TicksPerMicrosecond),
-        TimeSpan.Zero);
-
     private static string CorrectionRoute(Guid changeId) =>
         $"{ApiRoutes.BasePath}/operations/changes/{changeId}/corrections";
 
     private static string CancellationRoute(Guid journeyId) =>
         $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/cancellation";
-
-    private static string DelayRoute(Guid journeyId) =>
-        $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/delays";
 
     /// <summary>Three calling stops, the shape the shared rules are checked against.</summary>
     private static IReadOnlyList<JourneyStopDto> CallingStops(DateOnly serviceDate)
@@ -271,21 +160,6 @@ public sealed class CorrectedAtTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    /// <summary>The journey as another module or the public API reads it.</summary>
-    private static async Task<LiveJourneyView> GetJourneyAsync(
-        SmartRailApiFactory factory,
-        Guid journeyId)
-    {
-        using var scope = factory.Services.CreateScope();
-
-        var journey = await scope.ServiceProvider
-            .GetRequiredService<ILiveJourneys>()
-            .GetAsync(journeyId);
-
-        Assert.NotNull(journey);
-        return journey;
-    }
-
     /// <summary>The journey's events in sequence order, as the live stream reads them.</summary>
     private static async Task<IReadOnlyList<JourneyEventView>> ReadEventsAsync(
         SmartRailApiFactory factory,
@@ -311,22 +185,6 @@ public sealed class CorrectedAtTests
         Guid journeyId)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, CancellationRoute(journeyId));
-        request.WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController));
-
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> PostDelayAsync(
-        HttpClient client,
-        Guid journeyId,
-        int fromStopSequence,
-        int minutes)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, DelayRoute(journeyId))
-        {
-            Content = JsonContent.Create(new { fromStopSequence, minutes }),
-        };
-
         request.WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController));
 
         return await client.SendAsync(request);

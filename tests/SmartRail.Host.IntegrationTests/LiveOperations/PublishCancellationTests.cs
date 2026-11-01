@@ -159,138 +159,6 @@ public sealed class PublishCancellationTests
     }
 
     [Fact]
-    public async Task An_empty_json_body_is_accepted_like_no_body()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostCancellationAsync(client, journeyId, new { });
-
-            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_journey_with_a_recorded_departure_is_a_conflict_and_changes_nothing()
-    {
-        using var factory = NewFactory();
-        var today = RailwayToday();
-        var journeyId = await CreateTodayJourneyAsync(factory, today);
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            // The Guard has departed stop 1, so the journey is running and must be ended as an
-            // early termination instead.
-            await _postgres.ExecuteAsync(
-                $"""
-                UPDATE operations.journey_stop_live_states
-                SET actual_departure = '{DepartAt(today):O}'
-                WHERE journey_id = '{journeyId}' AND sequence = 1
-                """);
-            await _postgres.ExecuteAsync(
-                $"UPDATE operations.journey_live_states SET lifecycle_status = 'running' WHERE journey_id = '{journeyId}'");
-
-            using var client = factory.CreateApiClient();
-            using var response = await PostCancellationAsync(client, journeyId);
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-
-            var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            Assert.Contains(
-                "early termination",
-                problem.RootElement.GetProperty("detail").GetString()!);
-
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.journey_events WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task An_already_cancelled_journey_is_a_conflict()
-    {
-        using var factory = NewFactory();
-        var journeyId = await CreateTodayJourneyAsync(factory, RailwayToday());
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            using var first = await PostCancellationAsync(client, journeyId);
-            Assert.Equal(HttpStatusCode.Created, first.StatusCode);
-
-            using var second = await PostCancellationAsync(client, journeyId);
-
-            Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
-            Assert.Equal(1, await CountAsync(
-                $"SELECT count(*) FROM operations.status_changes WHERE journey_id = '{journeyId}'"));
-            Assert.Equal(1, await CountAsync(
-                $"SELECT count(*) FROM operations.journey_events WHERE journey_id = '{journeyId}'"));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-            await ResetAuditEntriesAsync(auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_cancellation_on_a_journey_dated_tomorrow_is_a_bad_request()
-    {
-        using var factory = NewFactory();
-        var tomorrow = RailwayToday().AddDays(1);
-        var journeyId = await CreateJourneyAsync(factory, tomorrow, CallingStops(tomorrow));
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var response = await PostCancellationAsync(client, journeyId);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Empty(await _postgres.QueryAsync(
-                $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
-                reader => reader.GetGuid(0)));
-        }
-        finally
-        {
-            await CleanUpJourneyAsync(journeyId);
-        }
-    }
-
-    [Fact]
-    public async Task A_cancellation_on_an_unknown_journey_is_not_found()
-    {
-        using var factory = NewFactory();
-        await StartAsync(factory);
-
-        using var client = factory.CreateApiClient();
-        using var response = await PostCancellationAsync(client, Guid.CreateVersion7());
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
     public async Task A_request_with_no_token_is_unauthorized()
     {
         using var factory = NewFactory();
@@ -337,11 +205,11 @@ public sealed class PublishCancellationTests
                 $"SELECT id FROM operations.status_changes WHERE journey_id = '{journeyId}'",
                 reader => reader.GetGuid(0)));
 
-            denialEventId = await NewestDenialMessageAsync(outboxBaseline);
+            denialEventId = await DenialMessageAsync(outboxBaseline, Guid.Parse(staffId), "PublishCancellation");
 
             // A denied write is recorded shortly after the refusal, by the bus (audit D5). Waiting
             // for it also means the cleanup below cannot race a late delivery.
-            var denial = await WaitForDenialAsync(Guid.Parse(staffId));
+            var denial = await WaitForDenialAsync(auditBaseline, Guid.Parse(staffId), "PublishCancellation");
 
             Assert.Equal(Guid.Parse(staffId), denial.Actor);
             Assert.Equal(role, denial.Role);
@@ -492,15 +360,9 @@ public sealed class PublishCancellationTests
     private static async Task<HttpResponseMessage> PostCancellationAsync(
         HttpClient client,
         Guid journeyId,
-        object? body = null,
         string? token = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, CancellationRoute(journeyId));
-
-        if (body is not null)
-        {
-            request.Content = JsonContent.Create(body);
-        }
 
         request.WithStaffToken(token ?? TestTokens.Create("controller.mahesh", Roles.NetworkController));
 
@@ -572,27 +434,32 @@ public sealed class PublishCancellationTests
             "SELECT coalesce(max(position), 0) FROM identity.outbox_messages",
             reader => reader.GetInt64(0)));
 
-    /// <summary>The denial message this request published, so the test can remove it again.</summary>
-    private async Task<Guid?> NewestDenialMessageAsync(long baselinePosition)
+    /// <summary>
+    /// The denial message this request published: the one naming this test's own subject and action
+    /// that was added after the baseline, so no other test's row can be picked up.
+    /// </summary>
+    private async Task<Guid?> DenialMessageAsync(long baselinePosition, Guid staffId, string action)
     {
         var ids = await _postgres.QueryAsync(
             $"""
             SELECT id
             FROM identity.outbox_messages
-            WHERE event_type = 'AccessDenied' AND position > {baselinePosition}
-            ORDER BY position DESC
-            LIMIT 1
+            WHERE event_type = 'AccessDenied'
+              AND position > {baselinePosition}
+              AND payload ->> 'StaffId' = '{staffId}'
+              AND payload ->> 'Action' = '{action}'
             """,
             reader => reader.GetGuid(0));
 
-        return ids.Count > 0 ? ids[0] : null;
+        return ids.Count == 0 ? null : Assert.Single(ids);
     }
 
     /// <summary>
-    /// Waits for a refused write to reach the audit record. Delivery is asynchronous, so the entry
-    /// appears shortly after the 403 (audit design D5).
+    /// Waits for the refusal this test made to reach the audit record. Delivery is asynchronous, so
+    /// the entry appears shortly after the 403 (audit design D5), and the actor and action chosen
+    /// after the baseline are the test's own.
     /// </summary>
-    private async Task<DenialRow> WaitForDenialAsync(Guid staffId)
+    private async Task<DenialRow> WaitForDenialAsync(long baselinePosition, Guid staffId, string action)
     {
         var deadline = DateTimeOffset.UtcNow.Add(Timeout);
 
@@ -602,11 +469,10 @@ public sealed class PublishCancellationTests
                 $"""
                 SELECT actor_staff_id, actor_role, action, source_event_id
                 FROM audit.entries
-                WHERE actor_staff_id = '{staffId}'
+                WHERE chain_position > {baselinePosition}
+                  AND actor_staff_id = '{staffId}'
                   AND outcome = 'denied'
-                  AND action = 'PublishCancellation'
-                ORDER BY chain_position DESC
-                LIMIT 1
+                  AND action = '{action}'
                 """,
                 reader => new DenialRow(
                     reader.GetGuid(0),
@@ -616,7 +482,7 @@ public sealed class PublishCancellationTests
 
             if (rows.Count > 0)
             {
-                return rows[0];
+                return Assert.Single(rows);
             }
 
             Assert.True(

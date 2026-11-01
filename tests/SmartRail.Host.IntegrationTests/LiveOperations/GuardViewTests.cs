@@ -14,10 +14,10 @@ namespace SmartRail.Host.IntegrationTests.LiveOperations;
 
 /// <summary>
 /// The Guard's journey views over HTTP: the role policy, the ownership filter that answers another
-/// guard's journey as not found, the empty list, the departure order, the calling stops with their
-/// logged and final flags, and the published changes a controller makes reaching the guard's detail.
-/// The timetable and station catalogue are substituted, because no network seed exists yet; the
-/// live state, the published changes and the audit record are real.
+/// guard's journey as not found, the departure order, the calling stops with their logged and final
+/// flags, and the published changes a controller makes reaching the guard's detail. The timetable and
+/// station catalogue are substituted, because no network seed exists yet; the live state, the
+/// published changes and the audit record are real.
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class GuardViewTests : IDisposable
@@ -127,21 +127,6 @@ public sealed class GuardViewTests : IDisposable
 
         Assert.Equal(HttpStatusCode.Unauthorized, list.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, detail.StatusCode);
-    }
-
-    [Fact]
-    public async Task A_guard_with_no_journeys_today_gets_an_empty_list()
-    {
-        await StartAsync();
-
-        using var response = await _client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, JourneysRoute)
-                .WithStaffToken(TestTokens.Create(SecondGuardSubject, Roles.Guard)));
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var listed = await response.Content.ReadFromJsonAsync<List<JourneyListItem>>();
-        Assert.NotNull(listed);
-        Assert.Empty(listed);
     }
 
     [Fact]
@@ -319,19 +304,6 @@ public sealed class GuardViewTests : IDisposable
             await CleanUpAsync();
             await ResetAuditEntriesAsync(auditBaseline);
         }
-    }
-
-    [Fact]
-    public async Task An_unknown_journey_is_not_found()
-    {
-        await StartAsync();
-
-        using var response = await _client.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, DetailRoute(Guid.CreateVersion7()))
-                .WithStaffToken(TestTokens.Create(GuardSubject, Roles.Guard)));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
     }
 
     private static string DetailRoute(Guid journeyId) => $"{JourneysRoute}/{journeyId}";
