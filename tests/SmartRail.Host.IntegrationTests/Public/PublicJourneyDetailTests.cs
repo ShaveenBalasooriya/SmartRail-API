@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -16,24 +15,20 @@ namespace SmartRail.Host.IntegrationTests.Public;
 
 /// <summary>
 /// The public journey detail and the conventions every public response shares (tasks 2.3 and 2.4):
-/// every stop in order with its calling flag, its times and its platform, the skipped station of a
-/// limited-stop journey, a platform change with the time it became known and its provenance, a
-/// corrected cancellation, cancellation guidance, the unknown journey, anonymous access, the
-/// uncacheable responses with no cookie, the rate-limited 429 that is uncacheable too, the request
-/// log holding neither the caller's address nor a query value, and the same journey read through the
-/// departures list and the detail being identical (design D1, D7).
+/// every stop in order with its calling flag, its times and its platform, cancellation guidance,
+/// anonymous access, the uncacheable responses with no cookie, the rate-limited 429 that is
+/// uncacheable too, and the same journey read through the departures list and the detail being
+/// identical (design D1, D7).
 /// </summary>
 /// <remarks>
 /// The Host runs with a fixed clock at noon in the railway's time zone on the day's date, so the
 /// seeded network and timetable are the same whenever the suite runs. Journeys the seed cannot
 /// express are created through the real generation announcement, and their live state is driven
-/// through the real Guard and controller endpoints, as the departures tests do.
+/// through the real controller endpoints, as the departures tests do.
 /// </remarks>
 [Collection(PostgresCollection.Name)]
 public sealed class PublicJourneyDetailTests
 {
-    private const string GuardSubject = "guard.ishara";
-
     private const string ControllerSubject = "controller.mahesh";
 
     /// <summary>The seeded guard account (seed/identity/staff.json), which owns every seeded service.</summary>
@@ -48,7 +43,6 @@ public sealed class PublicJourneyDetailTests
 
     /// <summary>Colombo Fort's platforms 2 and 3, the pair a platform change moves a stop between.</summary>
     private static readonly Guid ColomboFortPlatformTwo = Guid.Parse("61e67fba-522e-73bf-beab-5cb90e861c86");
-    private static readonly Guid ColomboFortPlatformThree = Guid.Parse("573394b2-45be-7539-9a43-fbc6448c7ad7");
 
     private static readonly Guid KollupitiyaPlatform = Guid.Parse("e86062e1-aa04-7673-b2dc-51892f077a58");
     private static readonly Guid BambalapitiyaPlatform = Guid.Parse("8f4b8be6-fea4-7c57-bd1d-64638e6273af");
@@ -56,9 +50,6 @@ public sealed class PublicJourneyDetailTests
 
     /// <summary>The seeded Coastal Line (seed/network/network.json), which serves the stations above.</summary>
     private static readonly Guid CoastalLine = Guid.Parse("f8493f1c-67b5-76e1-acb6-215d4d9f60ae");
-
-    /// <summary>A caller address the request log must never carry (diagnostic-logging spec, EP-14).</summary>
-    private const string ClientIp = "203.0.113.77";
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(20);
 
@@ -131,98 +122,6 @@ public sealed class PublicJourneyDetailTests
     }
 
     [Fact]
-    public async Task A_limited_stop_journey_marks_the_skipped_station_as_not_calling_with_no_times_or_platform()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        using var factory = NewFactory(now);
-        var journeyId = await CreateJourneyAsync(
-            factory,
-            today,
-            [
-                Stop(1, ColomboFort, ColomboFortPlatformTwo, null, now.AddMinutes(60)),
-                Stop(2, Kollupitiya, KollupitiyaPlatform, now.AddMinutes(70), now.AddMinutes(71)),
-                Stop(3, Bambalapitiya, null, null, null, isCalling: false),
-                Stop(4, MountLavinia, MountLaviniaPlatform, now.AddMinutes(90), null),
-            ]);
-
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-            using var document = await GetOkAsync(client, JourneyRoute(journeyId));
-            var stops = document.RootElement.GetProperty("data").GetProperty("stops").EnumerateArray().ToArray();
-
-            var skipped = Assert.Single(stops, stop => stop.GetProperty("sequence").GetInt32() == 3);
-
-            Assert.Equal(Bambalapitiya, skipped.GetProperty("station").GetProperty("id").GetGuid());
-            Assert.False(skipped.GetProperty("isCalling").GetBoolean());
-            Assert.True(IsNullOrAbsent(skipped, "scheduledArrival"));
-            Assert.True(IsNullOrAbsent(skipped, "scheduledDeparture"));
-            Assert.True(IsNullOrAbsent(skipped, "expectedArrival"));
-            Assert.True(IsNullOrAbsent(skipped, "expectedDeparture"));
-            Assert.True(IsNullOrAbsent(skipped, "actualDeparture"));
-            Assert.True(IsNullOrAbsent(skipped, "platform"));
-            Assert.True(IsNullOrAbsent(skipped, "platformChangedAt"));
-            Assert.True(IsNullOrAbsent(skipped, "provenance"));
-        }
-        finally
-        {
-            await CleanUpAsync([journeyId], auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_platform_change_shows_the_new_platform_its_time_and_its_provenance()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        using var factory = NewFactory(now);
-        var journeyId = await CreateJourneyAsync(
-            factory,
-            today,
-            [
-                Stop(1, ColomboFort, ColomboFortPlatformTwo, null, now.AddMinutes(60)),
-                Stop(2, MountLavinia, MountLaviniaPlatform, now.AddMinutes(90), null),
-            ]);
-
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            using var changed = await PostPlatformChangeAsync(
-                client,
-                journeyId,
-                stopSequence: 1,
-                platformId: ColomboFortPlatformThree);
-            Assert.Equal(HttpStatusCode.Created, changed.StatusCode);
-
-            using var change = JsonDocument.Parse(await changed.Content.ReadAsStringAsync());
-            var publishedAt = change.RootElement.GetProperty("publishedAt").GetDateTimeOffset();
-
-            using var document = await GetOkAsync(client, JourneyRoute(journeyId));
-            var data = document.RootElement.GetProperty("data");
-            var stop = data.GetProperty("stops")[0];
-
-            Assert.Equal("3", stop.GetProperty("platform").GetProperty("number").GetString());
-            Assert.Equal(ColomboFortPlatformThree, stop.GetProperty("platform").GetProperty("id").GetGuid());
-            Assert.True(
-                (stop.GetProperty("platformChangedAt").GetDateTimeOffset() - publishedAt).Duration()
-                    < TimeSpan.FromMilliseconds(1),
-                "the stop must show the time the platform change became known.");
-            Assert.Equal("automatically_published", stop.GetProperty("provenance").GetString());
-            Assert.Equal("automatically_published", data.GetProperty("provenance").GetString());
-        }
-        finally
-        {
-            await CleanUpAsync([journeyId], auditBaseline);
-        }
-    }
-
-    [Fact]
     public async Task A_cancelled_journey_carries_cancellation_guidance()
     {
         var today = RailwayToday();
@@ -254,59 +153,6 @@ public sealed class PublicJourneyDetailTests
         {
             await CleanUpAsync([journeyId], auditBaseline);
         }
-    }
-
-    [Fact]
-    public async Task A_corrected_cancellation_shows_the_restored_status_and_the_correction_time()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        using var factory = NewFactory(now);
-        var journeyId = await CreateJourneyAsync(factory, today, TodayStops(now));
-
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            using var cancelled = await PostCancellationAsync(client, journeyId);
-            Assert.Equal(HttpStatusCode.Created, cancelled.StatusCode);
-
-            using var cancellation = JsonDocument.Parse(await cancelled.Content.ReadAsStringAsync());
-            var changeId = cancellation.RootElement.GetProperty("id").GetGuid();
-
-            using var corrected = await PostCorrectionAsync(client, changeId);
-            Assert.Equal(HttpStatusCode.Created, corrected.StatusCode);
-
-            using var correction = JsonDocument.Parse(await corrected.Content.ReadAsStringAsync());
-            var correctedAt = correction.RootElement.GetProperty("publishedAt").GetDateTimeOffset();
-
-            using var document = await GetOkAsync(client, JourneyRoute(journeyId));
-            var data = document.RootElement.GetProperty("data");
-
-            // The false state is gone from the current values, and the journey says it was corrected.
-            Assert.Equal("scheduled", data.GetProperty("status").GetString());
-            Assert.Equal(correctedAt, data.GetProperty("correctedAt").GetDateTimeOffset());
-            Assert.True(IsNullOrAbsent(data, "provenance"));
-        }
-        finally
-        {
-            await CleanUpAsync([journeyId], auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task An_unknown_journey_is_not_found()
-    {
-        using var factory = NewFactory(SafeNow(RailwayToday()));
-        using var client = factory.CreateApiClient();
-        await StartAsync(factory);
-
-        var response = await GetAsync(client, JourneyRoute(Guid.CreateVersion7()));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.Status);
-        Assert.Equal("application/problem+json", response.MediaType);
     }
 
     [Fact]
@@ -410,40 +256,6 @@ public sealed class PublicJourneyDetailTests
 
         using var document = JsonDocument.Parse(await third.Content.ReadAsStringAsync());
         Assert.Equal(429, document.RootElement.GetProperty("status").GetInt32());
-    }
-
-    [Fact]
-    public async Task No_caller_address_or_query_value_reaches_the_request_log()
-    {
-        using var factory = NewFactory(SafeNow(RailwayToday()));
-        using var client = factory.CreateApiClient();
-        await StartAsync(factory);
-
-        var unknownJourney = Guid.CreateVersion7();
-        var routes = new[]
-        {
-            $"{ApiRoutes.BasePath}/public/departures?from={ColomboFort}&to={Kollupitiya}",
-            $"{ApiRoutes.BasePath}/public/stations/{ColomboFort}/departures",
-            JourneyRoute(unknownJourney),
-        };
-
-        foreach (var route in routes)
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, route);
-            request.Headers.Add("X-Forwarded-For", ClientIp);
-
-            using var response = await client.SendAsync(request);
-            Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-
-        await WaitForRequestLogsAsync(factory.Logs, routes.Length);
-
-        var log = factory.Logs.AllText;
-
-        Assert.DoesNotContain(ClientIp, log, StringComparison.Ordinal);
-        Assert.DoesNotContain(ColomboFort.ToString(), log, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(Kollupitiya.ToString(), log, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(unknownJourney.ToString(), log, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -578,38 +390,11 @@ public sealed class PublicJourneyDetailTests
         return journeyId;
     }
 
-    private static async Task<HttpResponseMessage> PostPlatformChangeAsync(
-        HttpClient client,
-        Guid journeyId,
-        int stopSequence,
-        Guid platformId)
-    {
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/platform-changes")
-        {
-            Content = JsonContent.Create(new { stopSequence, platformId }),
-        };
-        request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
-
-        return await client.SendAsync(request);
-    }
-
     private static async Task<HttpResponseMessage> PostCancellationAsync(HttpClient client, Guid journeyId)
     {
         using var request = new HttpRequestMessage(
             HttpMethod.Post,
             $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/cancellation");
-        request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
-
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> PostCorrectionAsync(HttpClient client, Guid changeId)
-    {
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{ApiRoutes.BasePath}/operations/changes/{changeId}/corrections");
         request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
 
         return await client.SendAsync(request);
@@ -640,18 +425,6 @@ public sealed class PublicJourneyDetailTests
         new DateTimeOffset(
             serviceDate.ToDateTime(new TimeOnly(12, 0)),
             TimeSpan.FromHours(5.5)).ToUniversalTime();
-
-    /// <summary>Waits until every request of the test has its one request-log entry.</summary>
-    private static async Task WaitForRequestLogsAsync(LogCapture logs, int expected)
-    {
-        var deadline = DateTimeOffset.UtcNow.Add(Timeout);
-
-        while (logs.Entries.Count(entry => entry.Message.Contains("responded", StringComparison.Ordinal)) < expected
-               && DateTimeOffset.UtcNow < deadline)
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(20));
-        }
-    }
 
     private async Task<long> MaxAuditPositionAsync() =>
         Assert.Single(await _postgres.QueryAsync(

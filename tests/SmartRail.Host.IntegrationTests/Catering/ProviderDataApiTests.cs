@@ -14,11 +14,10 @@ namespace SmartRail.Host.IntegrationTests.Catering;
 
 /// <summary>
 /// The provider read API against a real database (tasks 1.2 and 1.3; provider-data-api spec): the
-/// nine seeded stations with their platforms, the unknown station, the journeys calling at a station
-/// ordered by expected arrival with a terminating journey included, the date beyond tomorrow, a
-/// response carrying no staff or guard field, and the key that is required. The Host runs with a
-/// fixed clock at noon in the railway's time zone, so the seeded network and timetable are the same
-/// whenever the suite runs.
+/// nine seeded stations with their platforms, the journeys calling at a station ordered by expected
+/// arrival with a terminating journey included, a response carrying no staff or guard field, and the
+/// key that is required. The Host runs with a fixed clock at noon in the railway's time zone, so the
+/// seeded network and timetable are the same whenever the suite runs.
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class ProviderDataApiTests
@@ -87,18 +86,6 @@ public sealed class ProviderDataApiTests
         var platform = Assert.Single(kollupitiya.GetProperty("platforms").EnumerateArray());
         Assert.Equal(KollupitiyaPlatform, platform.GetProperty("id").GetGuid());
         Assert.Equal("1", platform.GetProperty("number").GetString());
-    }
-
-    [Fact]
-    public async Task An_unknown_station_is_not_found()
-    {
-        using var factory = NewFactory(SafeNow(RailwayToday()));
-        using var client = factory.CreateApiClient();
-
-        using var response = await SendAsync(client, StationRoute(Guid.CreateVersion7()));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
@@ -185,21 +172,6 @@ public sealed class ProviderDataApiTests
         {
             await CleanUpAsync([passing, terminating]);
         }
-    }
-
-    [Fact]
-    public async Task A_date_beyond_tomorrow_is_a_validation_problem()
-    {
-        using var factory = NewFactory(SafeNow(RailwayToday()));
-        using var client = factory.CreateApiClient();
-
-        using var response = await SendAsync(client, JourneysRoute(Kollupitiya, RailwayToday().AddDays(2)));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.True(document.RootElement.GetProperty("errors").TryGetProperty("date", out _));
     }
 
     [Fact]

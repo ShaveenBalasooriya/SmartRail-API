@@ -182,19 +182,26 @@ public sealed class AccessDeniedConsumerTests : IDisposable
     /// <summary>Refuses a Guard's write on a controller-only endpoint and returns the event's ID.</summary>
     private async Task<Guid> DenyAsync()
     {
+        var baselinePosition = Assert.Single(await _postgres.QueryAsync(
+            "SELECT coalesce(max(position), 0) FROM identity.outbox_messages",
+            reader => reader.GetInt64(0)));
+
         using var request = new HttpRequestMessage(HttpMethod.Post, TestEndpoints.ControllerWriteRoute)
             .WithStaffToken(TestTokens.Create("guard.ishara", Roles.Guard));
 
         using var response = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
+        // The denial this request published: the guard's refusal of this endpoint, added after the
+        // baseline, so an earlier test's announcement can never be mistaken for it.
         var ids = await _postgres.QueryAsync(
-            """
+            $"""
             SELECT id
             FROM identity.outbox_messages
             WHERE event_type = 'AccessDenied'
-            ORDER BY position DESC
-            LIMIT 1
+              AND position > {baselinePosition}
+              AND payload ->> 'StaffId' = '{GuardStaffId}'
+              AND payload ->> 'Action' = '{RefusedAction}'
             """,
             reader => reader.GetGuid(0));
 

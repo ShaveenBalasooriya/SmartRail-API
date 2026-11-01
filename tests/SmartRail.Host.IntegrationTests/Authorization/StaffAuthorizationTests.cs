@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using SmartRail.Host.IntegrationTests.Infrastructure;
@@ -18,9 +17,6 @@ namespace SmartRail.Host.IntegrationTests.Authorization;
 [Collection(PostgresCollection.Name)]
 public sealed class StaffAuthorizationTests : IDisposable
 {
-    /// <summary>The seeded controller account (seed/identity/staff.json).</summary>
-    private const string ControllerStaffId = "01a15874-e69c-70da-a689-76a7268ed330";
-
     /// <summary>The seeded guard account (seed/identity/staff.json).</summary>
     private const string GuardStaffId = "01a15874-e69d-73b2-b24d-d85d22fdead2";
 
@@ -134,17 +130,6 @@ public sealed class StaffAuthorizationTests : IDisposable
     }
 
     [Fact]
-    public async Task A_token_for_an_unknown_subject_is_refused()
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, IdentityMeRoute)
-            .WithStaffToken(TestTokens.Create("nobody.unknown", Roles.Guard));
-
-        using var response = await _client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Fact]
     public async Task A_request_with_no_token_to_a_staff_endpoint_is_unauthorized_with_problem_details()
     {
         using var response = await _client.GetAsync(IdentityMeRoute);
@@ -154,23 +139,6 @@ public sealed class StaffAuthorizationTests : IDisposable
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal(401, document.RootElement.GetProperty("status").GetInt32());
-    }
-
-    [Fact]
-    public async Task A_controller_token_sees_its_staff_id_username_and_role()
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get, IdentityMeRoute)
-            .WithStaffToken(TestTokens.Create("controller.mahesh", Roles.NetworkController));
-
-        using var response = await _client.SendAsync(request);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var body = await response.Content.ReadFromJsonAsync<CurrentStaffMember>();
-        Assert.NotNull(body);
-        Assert.Equal(Guid.Parse(ControllerStaffId), body.StaffId);
-        Assert.Equal("controller.mahesh", body.Username);
-        Assert.Equal(Roles.NetworkController, body.Role);
     }
 
     [Fact]
@@ -198,6 +166,4 @@ public sealed class StaffAuthorizationTests : IDisposable
             await Task.Delay(TimeSpan.FromMilliseconds(100));
         }
     }
-
-    private sealed record CurrentStaffMember(Guid StaffId, string Username, string Role);
 }

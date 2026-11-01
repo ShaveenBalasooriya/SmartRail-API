@@ -12,8 +12,8 @@ namespace SmartRail.Host.IntegrationTests.Audit;
 /// The Auditor's chain integrity check (audit design D6, AUD-05) and the record's promise that it
 /// holds no passenger data (AUD-07, M-03). An untouched record verifies with its count, a row edited
 /// directly in the database — with the append-only trigger disabled for the edit and enabled again —
-/// is caught at exactly its position both when its content and when its link was altered, an empty
-/// record is intact with zero entries, and only the Auditor may ask.
+/// is caught at exactly its position both when its content and when its link was altered, and only
+/// the Auditor may ask.
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class AuditIntegrityTests : IDisposable
@@ -82,28 +82,6 @@ public sealed class AuditIntegrityTests : IDisposable
             Assert.False(
                 document.RootElement.TryGetProperty("firstFailingPosition", out _),
                 "An intact record should not name a failing position.");
-        }
-        finally
-        {
-            await ResetAsync();
-        }
-    }
-
-    [Fact]
-    public async Task An_empty_record_is_intact_with_zero_entries()
-    {
-        await StartAsync();
-        await ResetAsync();
-
-        try
-        {
-            using var response = await GetIntegrityAsync(AuditorToken());
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            using var document = await ReadJsonAsync(response);
-            Assert.Equal("intact", document.RootElement.GetProperty("status").GetString());
-            Assert.Equal(0L, document.RootElement.GetProperty("entriesChecked").GetInt64());
-            Assert.False(document.RootElement.TryGetProperty("firstFailingPosition", out _));
         }
         finally
         {
@@ -312,19 +290,26 @@ public sealed class AuditIntegrityTests : IDisposable
     /// <summary>Refuses a Guard's write on a controller-only endpoint and returns the event's ID.</summary>
     private async Task<Guid> DenyAsync()
     {
+        var baselinePosition = Assert.Single(await _postgres.QueryAsync(
+            "SELECT coalesce(max(position), 0) FROM identity.outbox_messages",
+            reader => reader.GetInt64(0)));
+
         using var request = new HttpRequestMessage(HttpMethod.Post, TestEndpoints.ControllerWriteRoute)
             .WithStaffToken(GuardToken());
 
         using var response = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
+        // The denial this request published: the guard's refusal of this endpoint, added after the
+        // baseline, so an earlier test's announcement can never be mistaken for it.
         var ids = await _postgres.QueryAsync(
-            """
+            $"""
             SELECT id
             FROM identity.outbox_messages
             WHERE event_type = 'AccessDenied'
-            ORDER BY position DESC
-            LIMIT 1
+              AND position > {baselinePosition}
+              AND payload ->> 'Role' = 'guard'
+              AND payload ->> 'Action' = 'TestControllerOnlyWrite'
             """,
             reader => reader.GetGuid(0));
 

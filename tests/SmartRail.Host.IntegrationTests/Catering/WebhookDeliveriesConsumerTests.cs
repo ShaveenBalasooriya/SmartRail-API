@@ -82,7 +82,7 @@ public sealed class WebhookDeliveriesConsumerTests(PostgresFixture postgres)
             Assert.Equal(JsonValueKind.Null, root.GetProperty("correctsEventId").ValueKind);
 
             // The bus delivers at least once: the same message delivered again writes no second row.
-            await RedeliverAsync(journeyId);
+            await RedeliverAsync(journeyId, eventId);
             await Task.Delay(TimeSpan.FromSeconds(3));
 
             Assert.Equal(1, await CountAsync(
@@ -203,15 +203,13 @@ public sealed class WebhookDeliveriesConsumerTests(PostgresFixture postgres)
     }
 
     /// <summary>Records the same journey state change a second time, as a redelivery would.</summary>
-    private async Task RedeliverAsync(Guid journeyId)
+    private async Task RedeliverAsync(Guid journeyId, Guid eventId)
     {
         var messages = await postgres.QueryAsync(
             $"""
             SELECT event_type, payload
             FROM operations.outbox_messages
-            WHERE ordering_key = '{journeyId}' AND event_type = 'JourneyStateChanged'
-            ORDER BY position DESC
-            LIMIT 1
+            WHERE id = '{eventId}'
             """,
             reader => (Type: reader.GetString(0), Payload: reader.GetString(1)));
 

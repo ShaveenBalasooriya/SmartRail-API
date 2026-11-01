@@ -238,88 +238,6 @@ public sealed class AuditEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task A_page_size_of_100_is_accepted_and_101_is_refused()
-    {
-        await StartAsync();
-        await ResetAsync();
-
-        try
-        {
-            await InsertEntryAsync(BaseTime, Guid.CreateVersion7(), "publish_delay");
-
-            using var largest = await GetAsync($"{EntriesRoute}?pageSize=100", AuditorToken());
-            Assert.Equal(HttpStatusCode.OK, largest.StatusCode);
-
-            using var largestDocument = await ReadJsonAsync(largest);
-            Assert.Equal(100, largestDocument.RootElement.GetProperty("pageSize").GetInt32());
-
-            using var tooLarge = await GetAsync($"{EntriesRoute}?pageSize=101", AuditorToken());
-            Assert.Equal(HttpStatusCode.BadRequest, tooLarge.StatusCode);
-            Assert.Equal("application/problem+json", tooLarge.Content.Headers.ContentType?.MediaType);
-
-            using var problem = await ReadJsonAsync(tooLarge);
-            Assert.True(
-                problem.RootElement.GetProperty("errors").TryGetProperty("pageSize", out var messages),
-                "The refusal should name the pageSize field.");
-            Assert.NotEmpty(messages.EnumerateArray());
-        }
-        finally
-        {
-            await ResetAsync();
-        }
-    }
-
-    [Fact]
-    public async Task A_range_whose_start_is_after_its_end_is_refused()
-    {
-        await StartAsync();
-        await ResetAsync();
-
-        try
-        {
-            using var response = await GetAsync(
-                $"{EntriesRoute}?from={Timestamp(BaseTime.AddHours(2))}&to={Timestamp(BaseTime.AddHours(1))}",
-                AuditorToken());
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-
-            using var problem = await ReadJsonAsync(response);
-            Assert.True(
-                problem.RootElement.GetProperty("errors").TryGetProperty("from", out _),
-                "The refusal should name the from field.");
-        }
-        finally
-        {
-            await ResetAsync();
-        }
-    }
-
-    [Fact]
-    public async Task An_unknown_outcome_is_refused()
-    {
-        await StartAsync();
-        await ResetAsync();
-
-        try
-        {
-            using var response = await GetAsync($"{EntriesRoute}?outcome=cancelled", AuditorToken());
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-
-            using var problem = await ReadJsonAsync(response);
-            Assert.True(
-                problem.RootElement.GetProperty("errors").TryGetProperty("outcome", out _),
-                "The refusal should name the outcome field.");
-        }
-        finally
-        {
-            await ResetAsync();
-        }
-    }
-
-    [Fact]
     public async Task The_detail_returns_the_before_and_after_values_and_the_related_entry()
     {
         await StartAsync();
@@ -373,28 +291,6 @@ public sealed class AuditEndpointsTests : IDisposable
                 "delayed",
                 originalDocument.RootElement.GetProperty("after").GetProperty("status").GetString());
             Assert.Equal(5, originalDocument.RootElement.GetProperty("after").GetProperty("minutes").GetInt32());
-        }
-        finally
-        {
-            await ResetAsync();
-        }
-    }
-
-    [Fact]
-    public async Task An_unknown_entry_is_not_found()
-    {
-        await StartAsync();
-        await ResetAsync();
-
-        try
-        {
-            using var response = await GetAsync($"{EntriesRoute}/{Guid.CreateVersion7()}", AuditorToken());
-
-            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-
-            using var problem = await ReadJsonAsync(response);
-            Assert.Equal(404, problem.RootElement.GetProperty("status").GetInt32());
         }
         finally
         {

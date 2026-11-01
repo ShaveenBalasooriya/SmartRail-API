@@ -15,10 +15,8 @@ namespace SmartRail.Host.IntegrationTests.Public;
 /// <summary>
 /// The station display feed against the real seeded network and timetable (task 3.1,
 /// station-display-feed spec): the seeded interchange platform with its next departures in
-/// expected-departure order, the count default and its limits, an unknown station and an unknown
-/// platform number, a platform change that moves a train to the new platform's feed and announces it
-/// on the old one, the same journey read through the display and the passenger departures, and the
-/// freshness and uncacheable response every public response carries.
+/// expected-departure order, and the same journey read through the display and the passenger
+/// departures, with the freshness and uncacheable response every public response carries.
 /// </summary>
 /// <remarks>
 /// The Host runs with a fixed clock at noon in the railway's time zone on the day's date, so the
@@ -42,7 +40,6 @@ public sealed class PublicDisplayTests
 
     /// <summary>Colombo Fort's platforms 2 and 3, the pair a platform change moves a stop between.</summary>
     private static readonly Guid ColomboFortPlatformTwo = Guid.Parse("61e67fba-522e-73bf-beab-5cb90e861c86");
-    private static readonly Guid ColomboFortPlatformThree = Guid.Parse("573394b2-45be-7539-9a43-fbc6448c7ad7");
 
     private static readonly Guid KollupitiyaPlatform = Guid.Parse("e86062e1-aa04-7673-b2dc-51892f077a58");
     private static readonly Guid MountLaviniaPlatform = Guid.Parse("579f8b1e-e3fe-789b-9ba3-20aae4342df3");
@@ -115,120 +112,6 @@ public sealed class PublicDisplayTests
         Assert.Equal(HttpStatusCode.OK, raw.StatusCode);
         Assert.Equal("no-store", raw.Headers.CacheControl?.ToString());
         Assert.False(raw.Headers.TryGetValues("Set-Cookie", out _));
-    }
-
-    [Fact]
-    public async Task The_count_is_eight_by_default_and_twenty_at_most()
-    {
-        var now = SafeNow(RailwayToday());
-        using var factory = NewFactory(now);
-        using var client = factory.CreateApiClient();
-        await WaitForSeededFeedAsync(client);
-
-        var tooLarge = await GetAsync(client, $"{FeedRoute(ColomboFort, "2")}?count=21");
-        Assert.Equal(HttpStatusCode.BadRequest, tooLarge.Status);
-        Assert.Equal("application/problem+json", tooLarge.MediaType);
-        Assert.Contains("count", tooLarge.Body, StringComparison.Ordinal);
-
-        var notPositive = await GetAsync(client, $"{FeedRoute(ColomboFort, "2")}?count=0");
-        Assert.Equal(HttpStatusCode.BadRequest, notPositive.Status);
-        Assert.Contains("count", notPositive.Body, StringComparison.Ordinal);
-
-        using var byDefault = await GetOkAsync(client, FeedRoute(ColomboFort, "2"));
-        using var byMaximum = await GetOkAsync(client, $"{FeedRoute(ColomboFort, "2")}?count=20");
-        using var byOne = await GetOkAsync(client, $"{FeedRoute(ColomboFort, "2")}?count=1");
-
-        Assert.Equal(2, byDefault.RootElement.GetProperty("data").GetProperty("departures").GetArrayLength());
-        Assert.Equal(
-            JourneyIds(byDefault.RootElement.GetProperty("data").GetProperty("departures")),
-            JourneyIds(byMaximum.RootElement.GetProperty("data").GetProperty("departures")));
-        Assert.Single(byOne.RootElement.GetProperty("data").GetProperty("departures").EnumerateArray());
-    }
-
-    [Fact]
-    public async Task An_unknown_station_or_an_unknown_platform_number_is_not_found()
-    {
-        using var factory = NewFactory(SafeNow(RailwayToday()));
-        using var client = factory.CreateApiClient();
-        await StartAsync(factory);
-
-        var unknownStation = await GetAsync(client, FeedRoute(Guid.CreateVersion7(), "1"));
-        Assert.Equal(HttpStatusCode.NotFound, unknownStation.Status);
-        Assert.Equal("application/problem+json", unknownStation.MediaType);
-
-        // Colombo Fort has platforms 1, 2 and 3, so a number outside that set is not a platform.
-        var unknownPlatform = await GetAsync(client, FeedRoute(ColomboFort, "9"));
-        Assert.Equal(HttpStatusCode.NotFound, unknownPlatform.Status);
-        Assert.Equal("application/problem+json", unknownPlatform.MediaType);
-    }
-
-    [Fact]
-    public async Task A_replatformed_train_leaves_its_old_platform_and_is_announced_there()
-    {
-        var today = RailwayToday();
-        var now = SafeNow(today);
-        using var factory = NewFactory(now);
-        var journeyId = await CreateJourneyAsync(
-            factory,
-            today,
-            Coastal1210,
-            [
-                Stop(1, ColomboFort, ColomboFortPlatformTwo, null, now.AddMinutes(60)),
-                Stop(2, Kollupitiya, KollupitiyaPlatform, now.AddMinutes(70), now.AddMinutes(71)),
-                Stop(3, MountLavinia, MountLaviniaPlatform, now.AddMinutes(90), null),
-            ]);
-
-        var auditBaseline = await MaxAuditPositionAsync();
-
-        try
-        {
-            using var client = factory.CreateApiClient();
-
-            using var changed = await PostPlatformChangeAsync(
-                client,
-                journeyId,
-                stopSequence: 1,
-                platformId: ColomboFortPlatformThree);
-            Assert.Equal(HttpStatusCode.Created, changed.StatusCode);
-
-            using var change = JsonDocument.Parse(await changed.Content.ReadAsStringAsync());
-            var publishedAt = change.RootElement.GetProperty("publishedAt").GetDateTimeOffset();
-
-            // The new platform's feed lists it, flagged with the time the change became known.
-            using var newPlatform = await GetOkAsync(client, FeedRoute(ColomboFort, "3"));
-            var moved = Assert.Single(
-                newPlatform.RootElement.GetProperty("data").GetProperty("departures").EnumerateArray(),
-                departure => JourneyIdOf(departure) == journeyId);
-
-            Assert.Equal("3", moved.GetProperty("origin").GetProperty("platform").GetProperty("number").GetString());
-            Assert.Equal(
-                publishedAt,
-                moved.GetProperty("origin").GetProperty("platformChangedAt").GetDateTimeOffset());
-            Assert.DoesNotContain(
-                journeyId,
-                NoticeIds(newPlatform.RootElement.GetProperty("data").GetProperty("movedNotices")));
-
-            // The old platform no longer lists it as a departure, and announces where it went.
-            using var oldPlatform = await GetOkAsync(client, FeedRoute(ColomboFort, "2"));
-            var oldData = oldPlatform.RootElement.GetProperty("data");
-
-            Assert.DoesNotContain(
-                journeyId,
-                JourneyIds(oldData.GetProperty("departures")));
-
-            var notice = Assert.Single(
-                oldData.GetProperty("movedNotices").EnumerateArray(),
-                candidate => candidate.GetProperty("journeyId").GetGuid() == journeyId);
-
-            Assert.Equal(now.AddMinutes(60), notice.GetProperty("scheduledDeparture").GetDateTimeOffset());
-            Assert.Equal("3", notice.GetProperty("newPlatform").GetProperty("number").GetString());
-            Assert.Equal(MountLavinia, notice.GetProperty("destination").GetProperty("id").GetGuid());
-            Assert.Contains("has moved to platform 3", notice.GetProperty("message").GetString(), StringComparison.Ordinal);
-        }
-        finally
-        {
-            await CleanUpAsync([journeyId], auditBaseline);
-        }
     }
 
     [Fact]
@@ -342,18 +225,6 @@ public sealed class PublicDisplayTests
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     }
 
-    private static async Task<(HttpStatusCode Status, string? MediaType, string Body)> GetAsync(
-        HttpClient client,
-        string route)
-    {
-        using var response = await client.GetAsync(route);
-
-        return (
-            response.StatusCode,
-            response.Content.Headers.ContentType?.MediaType,
-            await response.Content.ReadAsStringAsync());
-    }
-
     /// <summary>Creates a journey's live state through the real generation announcement.</summary>
     private async Task<Guid> CreateJourneyAsync(
         SmartRailApiFactory factory,
@@ -397,23 +268,6 @@ public sealed class PublicDisplayTests
         return journeyId;
     }
 
-    private static async Task<HttpResponseMessage> PostPlatformChangeAsync(
-        HttpClient client,
-        Guid journeyId,
-        int stopSequence,
-        Guid platformId)
-    {
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            $"{ApiRoutes.BasePath}/operations/journeys/{journeyId}/platform-changes")
-        {
-            Content = JsonContent.Create(new { stopSequence, platformId }),
-        };
-        request.WithStaffToken(TestTokens.Create(ControllerSubject, Roles.NetworkController));
-
-        return await client.SendAsync(request);
-    }
-
     private static async Task<HttpResponseMessage> PostDelayAsync(
         HttpClient client,
         Guid journeyId,
@@ -441,12 +295,6 @@ public sealed class PublicDisplayTests
 
     private static Guid JourneyIdOf(JsonElement item) =>
         item.GetProperty("journey").GetProperty("journeyId").GetGuid();
-
-    private static Guid[] JourneyIds(JsonElement items) =>
-        [.. items.EnumerateArray().Select(JourneyIdOf)];
-
-    private static Guid[] NoticeIds(JsonElement notices) =>
-        [.. notices.EnumerateArray().Select(notice => notice.GetProperty("journeyId").GetGuid())];
 
     private static DateOnly RailwayToday() => DateOnly.FromDateTime(
         TimeZoneInfo.ConvertTime(

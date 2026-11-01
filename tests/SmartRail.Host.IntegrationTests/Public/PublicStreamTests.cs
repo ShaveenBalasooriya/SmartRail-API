@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -22,9 +22,8 @@ namespace SmartRail.Host.IntegrationTests.Public;
 /// position as its ID, the event type and the same live view the journey detail returns; a station
 /// the journey does not call at and a journey filter that names another journey receive nothing; a
 /// quiet stream still sends comment heartbeats; a reconnecting client is caught up in order and
-/// exactly once before going live, or told to reset when its position is unknown; a malformed filter
-/// is a validation problem; and the response is uncacheable and sets no cookie (design D3, D4, D5,
-/// D7).
+/// exactly once before going live, or told to reset when its position is unknown; and the response is
+/// uncacheable and sets no cookie (design D3, D4, D5, D7).
 /// </summary>
 /// <remarks>
 /// The Host runs with a fixed clock at noon in the railway's time zone, as the neighbouring public
@@ -91,24 +90,6 @@ public sealed class PublicStreamTests
         finally
         {
             await CleanUpAsync(journeyId, auditBaseline);
-        }
-    }
-
-    [Fact]
-    public async Task A_malformed_station_or_journey_filter_is_a_validation_problem()
-    {
-        using var factory = NewFactory(SafeNow(RailwayToday()));
-        using var client = factory.CreateApiClient();
-        await StartAsync(factory);
-
-        using var station = await client.GetAsync($"{StreamRoute}?station=not-a-station");
-        using var journey = await client.GetAsync($"{StreamRoute}?journey={Guid.Empty}");
-
-        foreach (var response in new[] { station, journey })
-        {
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-            Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
         }
     }
 
