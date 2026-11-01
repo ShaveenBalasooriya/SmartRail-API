@@ -3,7 +3,6 @@ using System.Net;
 using System.Text;
 using SmartRail.Host.Http;
 using SmartRail.Host.IntegrationTests.Flows.Support;
-using SmartRail.Host.IntegrationTests.Infrastructure;
 
 namespace SmartRail.Host.IntegrationTests.Flows.Drivers;
 
@@ -25,9 +24,9 @@ internal sealed record SseFrame(string? Id, string EventType, string Data)
 internal sealed record SseRead(IReadOnlyList<SseFrame> Events, int Comments);
 
 /// <summary>
-/// One open Server-Sent Events response, read frame by frame. Both live channels speak the same frame
-/// format, so one reader serves the passenger stream and the Guard's: the only differences are the
-/// route and the credential, which live here rather than in a test.
+/// One open Server-Sent Events response, read frame by frame. It reads the public event stream — the
+/// channel every passenger-facing client shares — since a flow's live evidence is that one change
+/// reaches it.
 /// </summary>
 /// <remarks>
 /// A read never throws when a stream is quiet: it returns what arrived inside the window, and the
@@ -37,7 +36,6 @@ internal sealed record SseRead(IReadOnlyList<SseFrame> Events, int Comments);
 internal sealed class SseStream : IDisposable
 {
     private const string PublicStreamRoute = $"{ApiRoutes.BasePath}/public/stream";
-    private const string GuardStreamRoute = $"{ApiRoutes.BasePath}/guard/stream";
 
     private readonly HttpResponseMessage _response;
     private readonly StreamReader _reader;
@@ -60,15 +58,7 @@ internal sealed class SseStream : IDisposable
         OpenAsync(
             client,
             journeyId is { } id ? $"{PublicStreamRoute}?journey={id}" : PublicStreamRoute,
-            token: null,
             lastEventId);
-
-    /// <summary>Opens the Guard's stream as <paramref name="session"/>, optionally resuming after a position.</summary>
-    public static Task<SseStream> OpenGuardAsync(
-        HttpClient client,
-        StaffSession? session,
-        string? lastEventId = null) =>
-        OpenAsync(client, GuardStreamRoute, session?.Token, lastEventId);
 
     /// <summary>
     /// Reads frames until the window elapses, until the first event, or until the expected number of
@@ -138,7 +128,12 @@ internal sealed class SseStream : IDisposable
         }
         catch (OperationCanceledException)
         {
-            // The window elapsed, or the stream was closed under the reader.
+            // The window elapsed; what arrived before it is what the caller asserts on.
+        }
+        catch (IOException)
+        {
+            // The body was closed under the reader: the in-process test server surfaces a cancelled
+            // read of an open stream this way, so it means the same as the window elapsing.
         }
 
         return new SseRead(events, comments);
@@ -158,15 +153,9 @@ internal sealed class SseStream : IDisposable
     private static async Task<SseStream> OpenAsync(
         HttpClient client,
         string route,
-        string? token,
         string? lastEventId)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, route);
-
-        if (token is not null)
-        {
-            request.WithStaffToken(token);
-        }
 
         if (lastEventId is not null)
         {

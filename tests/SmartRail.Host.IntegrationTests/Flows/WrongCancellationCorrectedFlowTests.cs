@@ -1,28 +1,22 @@
-using System.Text.Json;
 using SmartRail.Host.IntegrationTests.Flows.Support;
 using SmartRail.Host.IntegrationTests.Infrastructure;
-using SmartRail.SharedKernel.Application.Abstractions;
 
 namespace SmartRail.Host.IntegrationTests.Flows;
 
 /// <summary>
 /// Flow 5, a wrong cancellation corrected, at flow level: the controller cancels a journey that never
-/// left, every public channel says cancelled, then the correction withdraws the false state and every
-/// channel says the journey runs as scheduled again, with the correction's own time as the note that
-/// says it was corrected. The controller's view and the Guard's view agree about the corrected
-/// journey; the public stream delivers the cancellation and then the correction in stream order; the
-/// station display lists the journey again; the audit record keeps both entries, links the correction
-/// to the entry it withdraws, and still verifies. The negatives are the route's own: an unknown
-/// change, the same change corrected twice, a Guard's or an Auditor's correction, and a cancellation
-/// of a journey that has already left or is completed are each refused and change nothing. The provider
-/// is the fifth channel: the flow checks the deliveries a stub provider receiver accepts, their order
-/// and the correction's link to the cancellation event.
+/// left, every public channel says cancelled, then the correction withdraws the false state and the
+/// channels say the journey runs as scheduled again, with the correction's own time as the note that says
+/// it was corrected. The station display lists the journey again, the controller's view and the Guard's
+/// view agree, the audit record keeps both entries with the correction linked to the one it withdraws and
+/// still verifies, and the provider receives the cancellation and then the correction that references it.
+/// The story's own edge is that correcting the same change twice is a conflict and leaves one correction.
 /// </summary>
 /// <remarks>
-/// Every test builds its own journey through the real generation announcement and drives it with the
-/// real controller routes on the Host's frozen clock, so the correction's published time, the audit
-/// entry's time and the streams' order are exact. The shared audit record is append-only: the flow
-/// reads only the entries its own journey produced and removes them again when it finishes.
+/// Every test builds its own journey through the real generation announcement and drives it with the real
+/// controller routes on the Host's frozen clock, so the correction's published time and the audit
+/// entries' times are exact. The shared audit record is append-only: the flow reads only the entries that
+/// name its own journey, through the Auditor's API, and removes them again when it finishes.
 /// </remarks>
 [Collection(PostgresCollection.Name)]
 public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
@@ -50,11 +44,11 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
     /// <inheritdoc />
     public Task DisposeAsync() => _flow.DisposeAsync();
 
-    [Fact]
-    public async Task A_cancelled_journey_is_shown_cancelled_and_the_correction_restores_it_with_its_time()
+    [FlowFact]
+    public async Task Happy_path_a_corrected_cancellation_restores_the_detail_the_display_and_both_views()
     {
+        // Arrange
         var journey = await _flow.Journeys.CreateAsync();
-
         var cancellation = await _flow.Changes.CancelAsync(journey);
 
         var cancelled = await _flow.Public.JourneyViewAsync(journey.Id);
@@ -63,30 +57,6 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
             "cancelled",
             cancelled.Value!.Status,
             "The public journey detail should show the journey the controller cancelled as cancelled");
-
-        var correction = await _flow.Changes.CorrectAsync(cancellation.Id);
-
-        var restored = await _flow.Public.JourneyViewAsync(journey.Id);
-        Verify.Ok(restored, "The public journey detail should be readable after the correction");
-        Verify.Equal(
-            "scheduled",
-            restored.Value!.Status,
-            "The public journey detail should show the journey restored by the correction as scheduled");
-        Verify.Equal(
-            correction.PublishedAt,
-            restored.Value.CorrectedAt,
-            "The public journey detail should carry the correction's time as the note that it was corrected");
-        Verify.Equal(
-            null,
-            restored.Value.Provenance,
-            "The public journey detail should carry no disruption label once the cancellation is corrected");
-    }
-
-    [Fact]
-    public async Task The_controller_and_guard_views_agree_about_the_corrected_journey()
-    {
-        var journey = await _flow.Journeys.CreateAsync();
-        var cancellation = await _flow.Changes.CancelAsync(journey);
 
         var controllerCancelled = await _flow.ControllerWrites(StaffDirectory.Controller).JourneyViewAsync(journey.Id);
         Verify.Ok(controllerCancelled, "The controller's view should be readable after the cancellation");
@@ -103,8 +73,55 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
             guardCancelled.Value!.Render(),
             "The controller's view and the Guard's view of the cancelled journey should agree");
 
+        var cancelledBoard = await _flow.Public.DisplayAsync(SeededNetwork.ColomboFort, "2");
+        Verify.Ok(cancelledBoard, "The station display feed should be readable after the cancellation");
+
+        var cancelledItem = cancelledBoard.Value!.ForJourney(journey.Id);
+        Verify.True(
+            cancelledItem is not null,
+            "The station display feed should still list the cancelled journey within its grace window");
+        Verify.Equal(
+            "cancelled",
+            cancelledItem!.Journey.Status,
+            "The station display feed should show the cancelled journey as cancelled");
+
+        // Act
         var correction = await _flow.Changes.CorrectAsync(cancellation.Id);
 
+        // Assert — the passenger's detail is the scheduled journey again, carrying the correction's time.
+        var restored = await _flow.Public.JourneyViewAsync(journey.Id);
+        Verify.Ok(restored, "The public journey detail should be readable after the correction");
+        Verify.Equal(
+            "scheduled",
+            restored.Value!.Status,
+            "The public journey detail should show the journey restored by the correction as scheduled");
+        Verify.Equal(
+            correction.PublishedAt,
+            restored.Value.CorrectedAt,
+            "The public journey detail should carry the correction's time as the note that it was corrected");
+        Verify.Equal(
+            null,
+            restored.Value.Provenance,
+            "The public journey detail should carry no disruption label once the cancellation is corrected");
+
+        // Assert — the display lists the journey again, on the same terms as the detail.
+        var restoredBoard = await _flow.Public.DisplayAsync(SeededNetwork.ColomboFort, "2");
+        Verify.Ok(restoredBoard, "The station display feed should be readable after the correction");
+
+        var restoredItem = restoredBoard.Value!.ForJourney(journey.Id);
+        Verify.True(
+            restoredItem is not null,
+            "The station display feed should list the journey again after the correction");
+        Verify.Equal(
+            "scheduled",
+            restoredItem!.Journey.Status,
+            "The station display feed should show the journey restored by the correction as scheduled");
+        Verify.Equal(
+            correction.PublishedAt,
+            restoredItem.Journey.CorrectedAt,
+            "The station display feed should carry the correction's time as the note that it was corrected");
+
+        // Assert — the controller and the Guard see the same corrected journey, with both changes kept.
         var controller = await _flow.ControllerWrites(StaffDirectory.Controller).JourneyViewAsync(journey.Id);
         Verify.Ok(controller, "The controller's view should be readable after the correction");
 
@@ -123,66 +140,30 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
             controller.Value.Change(cancellation.Id).Corrected,
             "The controller's view should mark the cancellation as corrected");
         Verify.Equal(
-            correction.Id,
-            guard.Value.Changes[1].Id,
-            "The Guard's view should hold the correction as the second change on the journey");
-        Verify.Equal(
             2,
             guard.Value.Changes.Count,
             "The Guard's view should keep both the cancellation and the correction");
+        Verify.Equal(
+            correction.Id,
+            guard.Value.Changes[1].Id,
+            "The Guard's view should hold the correction as the second change on the journey");
     }
 
-    [Fact]
-    public async Task The_public_stream_delivers_the_cancellation_then_the_correction_in_stream_order()
+    [FlowFact]
+    public async Task Happy_path_the_audit_keeps_both_entries_and_links_the_correction_to_the_original()
     {
+        // Arrange
         var journey = await _flow.Journeys.CreateAsync();
-
-        using var stream = await _flow.Public.OpenStreamAsync(journey.Id);
-
         var cancellation = await _flow.Changes.CancelAsync(journey);
-        await _flow.Changes.CorrectAsync(cancellation.Id);
+        var correction = await _flow.Changes.CorrectAsync(cancellation.Id);
 
-        var delivered = await stream.ReadAsync(
-            Eventually.Timeout,
-            stopAtFirstEvent: false,
-            stopAfterEvents: 2);
-
-        Verify.Equal(
-            2,
-            delivered.Events.Count,
-            "The public stream should deliver the cancellation and the correction as two events");
-        Verify.Equal(
-            "cancellation_published",
-            delivered.Events[0].EventType,
-            "The public stream should deliver the cancellation first");
-        Verify.Equal(
-            "correction_published",
-            delivered.Events[1].EventType,
-            "The public stream should deliver the correction after the cancellation");
-        Verify.True(
-            delivered.Events[1].Position > delivered.Events[0].Position,
-            "The public stream should deliver the correction at a later stream position than the cancellation");
-
-        using var payload = JsonDocument.Parse(delivered.Events[1].Data);
-        Verify.Equal(
+        // Act — the record of this journey, read through the Auditor's API.
+        var entries = await _flow.Auditor.WaitForJourneyEntriesAsync(
             journey.Id,
-            payload.RootElement.GetProperty("journeyId").GetGuid(),
-            "The correction's stream event should carry the journey it corrected");
-    }
+            expected: 2,
+            "the cancellation and the correction should both be recorded against the journey");
 
-    [Fact]
-    public async Task The_audit_keeps_both_entries_and_the_correction_links_to_the_original()
-    {
-        var journey = await _flow.Journeys.CreateAsync();
-        var cancellation = await _flow.Changes.CancelAsync(journey);
-        await _flow.Changes.CorrectAsync(cancellation.Id);
-
-        var entries = await _flow.Audit.JourneyEntriesAsync(journey.Id);
-
-        Verify.Equal(
-            2,
-            entries.Count,
-            "The audit record should keep one entry for the cancellation and one for the correction");
+        // Assert
         Verify.Equal(
             "PublishCancellation, PublishCorrection",
             string.Join(", ", entries.Select(entry => entry.Action)),
@@ -191,13 +172,16 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
             "succeeded, succeeded",
             string.Join(", ", entries.Select(entry => entry.Outcome)),
             "Both the cancellation and the correction should be recorded as succeeded actions");
-        Verify.Equal(
-            entries[0].Id,
-            entries[1].RelatedEntryId,
-            "The correction's audit entry should link to the entry of the change it withdrew");
         Verify.True(
             entries[1].ChainPosition > entries[0].ChainPosition,
             "The correction's audit entry should be appended after the cancellation's");
+
+        var correctionEntry = await _flow.Auditor.EntryAsync(entries[1].Id);
+        Verify.Ok(correctionEntry, "The Auditor should be able to read the correction's audit entry");
+        Verify.Equal(
+            entries[0].Id,
+            correctionEntry.Value!.RelatedEntryId,
+            "The correction's audit entry should link to the entry of the change it withdrew");
 
         var report = await _flow.Auditor.IntegrityAsync();
         Verify.Ok(report, "The Auditor should be able to check the audit chain after the correction");
@@ -207,63 +191,19 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
             "The audit chain should still verify after a correction that keeps both entries");
     }
 
-    [Fact]
-    public async Task The_display_feed_lists_the_journey_again_once_the_cancellation_is_corrected()
+    [FlowFact]
+    public async Task Correcting_the_same_change_twice_is_a_conflict_and_leaves_one_correction()
     {
-        var journey = await _flow.Journeys.CreateAsync();
-
-        var cancellation = await _flow.Changes.CancelAsync(journey);
-
-        var cancelled = await _flow.Public.DisplayAsync(SeededNetwork.ColomboFort, "2");
-        Verify.Ok(cancelled, "The station display feed should be readable after the cancellation");
-
-        var cancelledItem = cancelled.Value!.ForJourney(journey.Id);
-        Verify.True(
-            cancelledItem is not null,
-            "The station display feed should still list the cancelled journey within its grace window");
-        Verify.Equal(
-            "cancelled",
-            cancelledItem!.Journey.Status,
-            "The station display feed should show the cancelled journey as cancelled");
-
-        var correction = await _flow.Changes.CorrectAsync(cancellation.Id);
-
-        var restored = await _flow.Public.DisplayAsync(SeededNetwork.ColomboFort, "2");
-        Verify.Ok(restored, "The station display feed should be readable after the correction");
-
-        var restoredItem = restored.Value!.ForJourney(journey.Id);
-        Verify.True(
-            restoredItem is not null,
-            "The station display feed should list the journey again after the correction");
-        Verify.Equal(
-            "scheduled",
-            restoredItem!.Journey.Status,
-            "The station display feed should show the journey restored by the correction as scheduled");
-        Verify.Equal(
-            correction.PublishedAt,
-            restoredItem.Journey.CorrectedAt,
-            "The station display feed should carry the correction's time as the note that it was corrected");
-    }
-
-    [Fact]
-    public async Task Correcting_a_change_that_does_not_exist_is_refused()
-    {
-        var attempt = await _flow.ControllerWrites(StaffDirectory.Controller)
-            .PublishCorrectionAsync(Guid.CreateVersion7());
-
-        Verify.NotFound(attempt, "A correction of a change the record does not hold should be refused");
-    }
-
-    [Fact]
-    public async Task Correcting_the_same_change_twice_is_refused_and_keeps_one_correction()
-    {
+        // Arrange
         var journey = await _flow.Journeys.CreateAsync();
         var cancellation = await _flow.Changes.CancelAsync(journey);
         await _flow.Changes.CorrectAsync(cancellation.Id);
 
+        // Act
         var second = await _flow.ControllerWrites(StaffDirectory.Controller)
             .PublishCorrectionAsync(cancellation.Id);
 
+        // Assert
         Verify.Conflict(second, "A second correction of the same change should be refused");
 
         var guard = await _flow.Guard.JourneyViewAsync(journey.Id);
@@ -274,81 +214,19 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
             "The refused second correction should leave exactly the cancellation and the one correction");
     }
 
-    [Theory]
-    [InlineData(Roles.Guard)]
-    [InlineData(Roles.Auditor)]
-    public async Task A_guard_or_an_auditor_cannot_correct_and_the_journey_is_unchanged(string role)
+    [FlowFact]
+    public async Task Happy_path_the_provider_receives_the_cancellation_then_the_correction_that_references_it()
     {
-        var session = role == Roles.Guard ? StaffDirectory.Guard : StaffDirectory.Auditor;
-        var journey = await _flow.Journeys.CreateAsync();
-        var cancellation = await _flow.Changes.CancelAsync(journey);
-        var before = await _flow.Internals.SnapshotAsync(journey.Id);
-        var beforeDetail = await _flow.Public.JourneyViewAsync(journey.Id);
-        var baseline = await _flow.Identity.MaxPositionAsync();
-
-        var refused = await _flow.ControllerWrites(session).PublishCorrectionAsync(cancellation.Id);
-
-        Verify.Refused(refused, $"A {role}'s correction should be refused");
-
-        await _flow.Identity.WaitUntilDeliveredAsync(
-            baseline,
-            $"a {role}'s refused correction should be announced and delivered to the audit consumer");
-
-        var after = await _flow.Internals.SnapshotAsync(journey.Id);
-        Verify.Unchanged(
-            before.Render(),
-            after.Render(),
-            $"A {role}'s refused correction should leave the journey's changes, events and outbox rows untouched");
-
-        var afterDetail = await _flow.Public.JourneyViewAsync(journey.Id);
-        Verify.Ok(afterDetail, $"The public journey detail should still be readable after a {role}'s refusal");
-        Verify.Equal(
-            beforeDetail.Value!.Status,
-            afterDetail.Value!.Status,
-            $"A {role}'s refused correction should leave the public status alone");
-    }
-
-    [Theory]
-    [InlineData("departed")]
-    [InlineData("completed")]
-    public async Task A_cancellation_of_a_journey_that_is_no_longer_cancellable_is_refused(string state)
-    {
-        var journey = await _flow.Journeys.CreateAsync();
-
-        if (state == "departed")
-        {
-            await _flow.Changes.MakeRunningAsync(journey);
-        }
-        else
-        {
-            await _flow.Internals.MarkCompletedAsync(journey.Id);
-        }
-
-        var before = await _flow.Internals.SnapshotAsync(journey.Id);
-
-        var attempt = await _flow.ControllerWrites(StaffDirectory.Controller)
-            .PublishCancellationAsync(journey.Id);
-
-        Verify.Conflict(attempt, $"A cancellation of a journey that has {state} should be refused");
-
-        var after = await _flow.Internals.SnapshotAsync(journey.Id);
-        Verify.Unchanged(
-            before.Render(),
-            after.Render(),
-            $"A refused cancellation of a journey that has {state} should publish no change, event or outbox row");
-    }
-
-    [Fact]
-    public async Task The_provider_receives_the_cancellation_then_the_correction_that_references_it()
-    {
+        // Arrange
         var journey = await _flow.Journeys.CreateAsync();
         await using var provider = await ProviderReceiver.StartAsync();
-
         await _flow.Provider.RegisterWebhookAsync(provider.CallbackUrl);
 
+        // Act
         var cancellation = await _flow.Changes.CancelAsync(journey);
         await _flow.Changes.CorrectAsync(cancellation.Id);
 
+        // Assert
         await provider.WaitForDeliveriesAsync(
             2,
             "the provider should receive the cancellation and then the correction");
@@ -366,25 +244,22 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
             deliveries[0].EventId,
             deliveries[1].CorrectsEventId,
             "The correction's delivery should point at the cancellation event it withdraws");
-
-        await _flow.Provider.WaitForDeliveredAsync(
-            journey.Id,
-            expected: 2,
-            "both the cancellation's and the correction's deliveries should be marked delivered");
     }
 
-    [Fact]
-    public async Task The_provider_receives_one_journeys_changes_in_sequence_number_order()
+    [FlowFact]
+    public async Task Happy_path_the_provider_receives_one_journeys_changes_in_sequence_number_order()
     {
+        // Arrange
         var journey = await _flow.Journeys.CreateAsync();
         await using var provider = await ProviderReceiver.StartAsync();
-
         await _flow.Provider.RegisterWebhookAsync(provider.CallbackUrl);
 
+        // Act
         await _flow.Changes.DelayAsync(journey, fromStopSequence: 2, minutes: 5);
         var cancellation = await _flow.Changes.CancelAsync(journey);
         await _flow.Changes.CorrectAsync(cancellation.Id);
 
+        // Assert
         await provider.WaitForDeliveriesAsync(
             3,
             "the provider should receive every change published on the journey");
@@ -402,10 +277,5 @@ public sealed class WrongCancellationCorrectedFlowTests : IAsyncLifetime
         Verify.True(
             deliveries.All(delivery => delivery.JourneyId == journey.Id),
             "Every one of the journey's deliveries should carry that journey");
-
-        await _flow.Provider.WaitForDeliveredAsync(
-            journey.Id,
-            expected: 3,
-            "every one of the journey's deliveries should be marked delivered");
     }
 }

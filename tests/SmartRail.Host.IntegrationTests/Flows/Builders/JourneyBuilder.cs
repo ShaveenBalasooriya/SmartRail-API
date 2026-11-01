@@ -1,3 +1,5 @@
+using System.Net;
+using SmartRail.Host.Http;
 using SmartRail.Host.IntegrationTests.Flows.Support;
 using SmartRail.Host.IntegrationTests.Infrastructure;
 using SmartRail.RailNetwork.Contracts;
@@ -20,26 +22,26 @@ internal sealed record Journey(Guid Id, DateOnly ServiceDate);
 /// depends on another's data.
 /// </summary>
 /// <remarks>
-/// The stops are three seeded calling stops of the Coastal Line, the first departing an hour after the
-/// frozen clock: a scheduled journey that may be delayed, cancelled, moved to another platform of
-/// Colombo Fort, made running by a departure at stop 1, or withdrawn after a published delay.
+/// The announcement is the one in-process step a flow keeps: no public route generates a journey, so a
+/// flow that wants exact times builds its own. Everything after it — the live state appearing, the
+/// times, the channels — is read back through the public API.
 /// </remarks>
 internal sealed class JourneyBuilder
 {
     private readonly List<Journey> _created = [];
     private readonly SmartRailApiFactory _factory;
-    private readonly PostgresFixture _postgres;
+    private readonly HttpClient _client;
     private readonly DateOnly _serviceDate;
     private readonly DateTimeOffset _now;
 
     public JourneyBuilder(
         SmartRailApiFactory factory,
-        PostgresFixture postgres,
+        HttpClient client,
         DateOnly serviceDate,
         DateTimeOffset now)
     {
         _factory = factory;
-        _postgres = postgres;
+        _client = client;
         _serviceDate = serviceDate;
         _now = now;
     }
@@ -49,8 +51,8 @@ internal sealed class JourneyBuilder
 
     /// <summary>
     /// Creates one scheduled journey assigned to <paramref name="guardStaffId"/> and waits until its
-    /// live state exists. The default guard is the seeded one, and the default shape is the three-stop
-    /// journey every flow shares.
+    /// live state is public. The default guard is the seeded one, and the default shape is the
+    /// three-stop journey every flow shares.
     /// </summary>
     public async Task<Journey> CreateAsync(
         Guid? guardStaffId = null,
@@ -79,9 +81,9 @@ internal sealed class JourneyBuilder
         await database.SaveChangesAsync();
 
         await Eventually.ValueAsync(
-            () => CountLiveStatesAsync(journey.Id),
-            count => count == 1,
-            $"the journey {journey.Id} should have its live state after generation was announced");
+            () => IsPublishedAsync(journey.Id),
+            published => published,
+            $"journey {journey.Id} should become readable through the public detail once generation was announced");
 
         _created.Add(journey);
 
@@ -191,8 +193,16 @@ internal sealed class JourneyBuilder
             SeededNetwork.MountLaviniaPlatform),
     ];
 
-    private async Task<long> CountLiveStatesAsync(Guid journeyId) =>
-        Assert.Single(await _postgres.QueryAsync(
-            $"SELECT count(*) FROM operations.journey_live_states WHERE journey_id = '{journeyId}'",
-            reader => reader.GetInt64(0)));
+    /// <summary>
+    /// Whether the public detail answers for the journey yet. Generating a journey is announced through
+    /// the module's outbox, so the live state appears just after the announcement commits; the public
+    /// detail is the earliest public evidence that it has.
+    /// </summary>
+    private async Task<bool> IsPublishedAsync(Guid journeyId)
+    {
+        using var response = await _client.GetAsync(
+            $"{ApiRoutes.BasePath}/public/journeys/{journeyId}");
+
+        return response.StatusCode == HttpStatusCode.OK;
+    }
 }

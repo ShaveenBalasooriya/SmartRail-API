@@ -1,6 +1,3 @@
-using System.Text;
-using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.IdentityModel.Tokens;
 using SmartRail.Host.IntegrationTests.Infrastructure;
 using SmartRail.SharedKernel.Application.Abstractions;
 
@@ -37,9 +34,8 @@ internal sealed class StaffSession
 }
 
 /// <summary>
-/// The three seeded staff identities (<c>seed/identity/staff.json</c>) a flow acts as, plus the two
-/// unusable variants the authentication cases need. The role comes from the token's group and the
-/// staff id from its subject, exactly as the Host resolves them.
+/// The three seeded staff identities (<c>seed/identity/staff.json</c>) a flow acts as. The role comes
+/// from the token's group and the staff id from its subject, exactly as the Host resolves them.
 /// </summary>
 internal static class StaffDirectory
 {
@@ -82,51 +78,4 @@ internal static class StaffDirectory
         Roles.Auditor,
         AuditorId,
         () => TestTokens.Create("auditor.wasantha", Roles.Auditor));
-
-    /// <summary>The controller's identity with a token that expired an hour ago.</summary>
-    public static StaffSession ControllerWithExpiredToken { get; } = new(
-        "controller.mahesh",
-        Roles.NetworkController,
-        ControllerId,
-        () => TestTokens.Create(
-            "controller.mahesh",
-            DateTimeOffset.UtcNow.AddHours(-1),
-            Roles.NetworkController));
-
-    /// <summary>The controller's identity with a token signed by a key the Host does not trust.</summary>
-    public static StaffSession ControllerWithForeignKey { get; } = new(
-        "controller.mahesh",
-        Roles.NetworkController,
-        ControllerId,
-        () => ForeignToken.Create("controller.mahesh", Roles.NetworkController));
-}
-
-/// <summary>
-/// Mints a token that claims to be a staff token — same issuer, audience, subject, role and lifetime —
-/// but is signed with a key the Host's staff scheme does not hold. Authentication has to refuse it on
-/// the signature, which is what a forged token looks like.
-/// </summary>
-internal static class ForeignToken
-{
-    private static readonly SymmetricSecurityKey SigningKey = new(
-        Encoding.UTF8.GetBytes("smartrail-integration-test-foreign-key-of-sufficient-length"));
-
-    /// <summary>A token for <paramref name="subject"/> in the named role, signed with the foreign key.</summary>
-    public static string Create(string subject, string role)
-    {
-        var claims = new System.Security.Claims.ClaimsIdentity();
-        claims.AddClaim(new System.Security.Claims.Claim(TestTokens.SubjectClaim, subject));
-        claims.AddClaim(new System.Security.Claims.Claim("groups", role));
-
-        return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
-        {
-            Subject = claims,
-            Issuer = TestTokens.Issuer,
-            Audience = TestTokens.Audience,
-            IssuedAt = DateTime.UtcNow.AddMinutes(-1),
-            NotBefore = DateTime.UtcNow.AddMinutes(-1),
-            Expires = DateTime.UtcNow.AddMinutes(5),
-            SigningCredentials = new SigningCredentials(SigningKey, SecurityAlgorithms.HmacSha256),
-        });
-    }
 }

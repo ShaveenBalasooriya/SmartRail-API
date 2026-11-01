@@ -111,7 +111,4 @@ internal sealed class GuardDriver
 
         return new ApiAttempt<StaffJourneyView>(response.StatusCode, mediaType, text, value);
     }
-
-    /// <summary>Opens the guard's live stream as this session, before a change is published.</summary>
-    public Task<SseStream> OpenStreamAsync() => SseStream.OpenGuardAsync(_client, _session);
 }

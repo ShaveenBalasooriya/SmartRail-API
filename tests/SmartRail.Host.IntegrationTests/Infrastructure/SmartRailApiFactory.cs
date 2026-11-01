@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using SmartRail.Host.Http;
+using SmartRail.Host.IntegrationTests.Flows.Support;
 using SmartRail.IdentityAccess.Api.Authentication;
 using Testcontainers.PostgreSql;
 
@@ -17,13 +18,24 @@ namespace SmartRail.Host.IntegrationTests.Infrastructure;
 /// </summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    private PostgreSqlContainer _container = null!;
+    private PostgreSqlContainer? _container;
 
     /// <summary>The connection string of the container, with a short timeout so a stopped database fails fast.</summary>
-    public string ConnectionString => $"{_container.GetConnectionString()};Timeout=5;Command Timeout=5";
+    public string ConnectionString => _container is null
+        ? throw new InvalidOperationException(
+            "This test needs the in-process target, which owns a PostgreSQL container; "
+            + $"{FlowTarget.TargetVariable}=remote starts none.")
+        : $"{_container.GetConnectionString()};Timeout=5;Command Timeout=5";
 
     public async Task InitializeAsync()
     {
+        // A remote run starts no container: the tests that target a deployed API never touch this
+        // database, and a flow that skipped must not pay for Docker (mirrors ApiDatabaseFixture).
+        if (FlowTarget.IsRemote)
+        {
+            return;
+        }
+
         _container = new PostgreSqlBuilder("postgres:17-alpine")
             .WithImage("postgres:17-alpine")
             .WithDatabase("smartrail")
@@ -34,12 +46,18 @@ public sealed class PostgresFixture : IAsyncLifetime
         await _container.StartAsync();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        if (_container is not null)
+        {
+            await _container.DisposeAsync();
+        }
+    }
 
-    /// <summary>Runs raw SQL against the container, for assertions the API surface does not expose.</summary>
+    /// <summary>Runs raw SQL against the container, for cleanup the API surface does not expose.</summary>
     public async Task<List<T>> QueryAsync<T>(string sql, Func<Npgsql.NpgsqlDataReader, T> read)
     {
-        await using var connection = new Npgsql.NpgsqlConnection(_container.GetConnectionString());
+        await using var connection = new Npgsql.NpgsqlConnection(ConnectionString);
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();
@@ -58,7 +76,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// <summary>Executes a command and returns the number of rows affected.</summary>
     public async Task<int> ExecuteAsync(string sql)
     {
-        await using var connection = new Npgsql.NpgsqlConnection(_container.GetConnectionString());
+        await using var connection = new Npgsql.NpgsqlConnection(ConnectionString);
         await connection.OpenAsync();
 
         await using var command = connection.CreateCommand();

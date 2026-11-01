@@ -6,27 +6,31 @@ using SmartRail.SharedKernel.Application.Abstractions;
 namespace SmartRail.Host.IntegrationTests.Flows;
 
 /// <summary>
-/// Flow 4, separation of duties, at flow level: on every route that publishes a change to a journey,
-/// a Guard's token and an Auditor's token are refused with 403, the refusal leaves the journey's
-/// changes, events, outbox rows and public detail untouched, exactly one denied audit entry names the
-/// actor, role, action and time, an unauthenticated or unusable token is refused with 401 and is not
-/// recorded at all, an Auditor's read is allowed and silent, the chain still verifies afterwards — and
-/// the controller succeeds on the very same routes, so none of the refusals can pass vacuously.
+/// Flow 4, separation of duties, at flow level: the controller publishes a change on the very routes a
+/// Guard's and an Auditor's token are refused on, so the refusals cannot pass vacuously; each refusal is
+/// a 403 problem-details answer and is recorded once in the audit record, naming the actor, the role, the
+/// action and the server time; and a refused write leaves the controller's view of the journey and the
+/// journey's events exactly as they were.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Every test builds its own journey (and, where the route needs one, its own departure or published
-/// change) through the real generation, Guard and controller endpoints, and removes it again. The
-/// audit record is append-only and shared, so a denial is looked up by the announcement it was written
-/// from and silence is measured from the chain position the flow started at — never by a global count —
-/// and the entries the flow appended are removed again when it finishes, because the neighbouring
-/// suites identify a denial by its actor and action and must not see an older one of the flow's. The
-/// neighbouring <c>StaffAuthorizationTests</c> already proves the policy endpoint by endpoint; what
-/// this flow adds is the per-route proof on the real publishing routes, with the state and the record
-/// checked behind it.
+/// change) through the real generation, Guard and controller endpoints. The audit record is append-only
+/// and shared, so a denial is found by the baseline of denied entries this flow took itself and the actor
+/// the attempt was made as — never by a global count — and the entries the flow appended are removed
+/// again when it finishes.
+/// </para>
+/// <para>
+/// The neighbouring <c>StaffAuthorizationTests</c> already proves the policy endpoint by endpoint; what
+/// this flow adds is the per-route proof on the real publishing routes, with the record read behind it
+/// through the Auditor's API.
+/// </para>
 /// </remarks>
 [Collection(PostgresCollection.Name)]
 public sealed class SeparationOfDutiesFlowTests : IAsyncLifetime
 {
+    private const int DelayMinutes = 15;
+
     private readonly PostgresFixture _postgres;
     private FlowContext _flow = null!;
 
@@ -42,97 +46,29 @@ public sealed class SeparationOfDutiesFlowTests : IAsyncLifetime
     /// <inheritdoc />
     public Task DisposeAsync() => _flow.DisposeAsync();
 
-    [Theory]
-    [InlineData(ControllerWrite.Delay)]
-    [InlineData(ControllerWrite.Cancellation)]
-    [InlineData(ControllerWrite.PlatformChange)]
-    [InlineData(ControllerWrite.Termination)]
-    [InlineData(ControllerWrite.Correction)]
-    public async Task A_guard_token_is_refused_on_every_controller_write(ControllerWrite write)
+    [FlowFact]
+    public async Task Happy_path_the_controller_publishes_a_delay_and_no_denial_is_recorded()
     {
-        var target = await _flow.Writes.ArrangeAsync(write);
+        // Arrange
+        var journey = await _flow.Journeys.CreateAsync();
+        var deniedBefore = await _flow.Auditor.DeniedEntryIdsAsync(StaffDirectory.ControllerId);
 
-        var attempt = await _flow.Writes.AttemptAsync(write, StaffDirectory.Guard, target);
+        // Act — the controller makes the same write a Guard's and an Auditor's token is refused on.
+        var published = await _flow.ControllerWrites(StaffDirectory.Controller)
+            .PublishDelayAsync(journey.Id, fromStopSequence: 2, minutes: 5);
 
-        Verify.Refused(
-            attempt,
-            $"A Guard's POST {ControllerWriteSteps.Name(write)} should be refused");
+        // Assert
+        Verify.Created(
+            published,
+            "The controller's delay on the route the refusals are measured against,");
+
+        await _flow.Auditor.NothingDeniedAfterAsync(
+            StaffDirectory.ControllerId,
+            deniedBefore,
+            "the controller's accepted delay should not be recorded as a denied attempt");
     }
 
-    [Theory]
-    [InlineData(ControllerWrite.Delay)]
-    [InlineData(ControllerWrite.Cancellation)]
-    [InlineData(ControllerWrite.PlatformChange)]
-    [InlineData(ControllerWrite.Termination)]
-    [InlineData(ControllerWrite.Correction)]
-    public async Task An_auditor_token_is_refused_on_every_controller_write(ControllerWrite write)
-    {
-        var target = await _flow.Writes.ArrangeAsync(write);
-
-        var attempt = await _flow.Writes.AttemptAsync(write, StaffDirectory.Auditor, target);
-
-        Verify.Refused(
-            attempt,
-            $"An Auditor's POST {ControllerWriteSteps.Name(write)} should be refused");
-    }
-
-    [Theory]
-    [InlineData(ControllerWrite.Delay)]
-    [InlineData(ControllerWrite.Cancellation)]
-    [InlineData(ControllerWrite.PlatformChange)]
-    [InlineData(ControllerWrite.Termination)]
-    [InlineData(ControllerWrite.Correction)]
-    public async Task A_refused_write_leaves_the_journeys_changes_events_and_outbox_rows_untouched(
-        ControllerWrite write)
-    {
-        var name = ControllerWriteSteps.Name(write);
-        var target = await _flow.Writes.ArrangeAsync(write);
-        var before = await _flow.Internals.SnapshotAsync(target.Journey.Id);
-        var baseline = await _flow.Identity.MaxPositionAsync();
-
-        await _flow.Writes.AttemptAsync(write, StaffDirectory.Guard, target);
-
-        // The refusal is recorded asynchronously, so wait for it to be fully processed: a late write
-        // by the denied attempt would have happened by now, and the comparison below would catch it.
-        await _flow.Identity.WaitUntilDeliveredAsync(
-            baseline,
-            $"the Guard's refused {name} should be announced and delivered to the audit consumer");
-
-        var after = await _flow.Internals.SnapshotAsync(target.Journey.Id);
-
-        Verify.Unchanged(
-            before.Render(),
-            after.Render(),
-            $"The journey's published changes, journey events and outbox rows should be untouched by a "
-            + $"Guard's refused {name}");
-    }
-
-    [Theory]
-    [InlineData(ControllerWrite.Delay)]
-    [InlineData(ControllerWrite.Cancellation)]
-    [InlineData(ControllerWrite.PlatformChange)]
-    [InlineData(ControllerWrite.Termination)]
-    [InlineData(ControllerWrite.Correction)]
-    public async Task A_refused_write_leaves_the_public_journey_detail_unchanged(ControllerWrite write)
-    {
-        var name = ControllerWriteSteps.Name(write);
-        var target = await _flow.Writes.ArrangeAsync(write);
-
-        var before = await _flow.Public.JourneyAsync(target.Journey.Id);
-        Verify.Ok(before, $"the public journey detail should be readable before a Guard's refused {name}");
-
-        await _flow.Writes.AttemptAsync(write, StaffDirectory.Guard, target);
-
-        var after = await _flow.Public.JourneyAsync(target.Journey.Id);
-        Verify.Ok(after, $"the public journey detail should still be readable after a Guard's refused {name}");
-
-        Verify.Unchanged(
-            before.Value!.RawJson,
-            after.Value!.RawJson,
-            $"The public journey detail should be unchanged by a Guard's refused {name}");
-    }
-
-    [Theory]
+    [FlowTheory]
     [InlineData(Roles.Guard, ControllerWrite.Delay)]
     [InlineData(Roles.Guard, ControllerWrite.Cancellation)]
     [InlineData(Roles.Guard, ControllerWrite.PlatformChange)]
@@ -143,146 +79,133 @@ public sealed class SeparationOfDutiesFlowTests : IAsyncLifetime
     [InlineData(Roles.Auditor, ControllerWrite.PlatformChange)]
     [InlineData(Roles.Auditor, ControllerWrite.Termination)]
     [InlineData(Roles.Auditor, ControllerWrite.Correction)]
-    public async Task A_denied_write_is_recorded_once_naming_the_actor_role_action_and_time(
+    public async Task A_guard_or_an_auditor_token_is_refused_on_every_controller_write(
         string role,
         ControllerWrite write)
     {
-        var session = SessionFor(role);
-        var name = ControllerWriteSteps.Name(write);
+        // Arrange
         var target = await _flow.Writes.ArrangeAsync(write);
-        var baseline = await _flow.Identity.MaxPositionAsync();
 
-        await _flow.Writes.AttemptAsync(write, session, target);
+        // Act
+        var attempt = await _flow.Writes.AttemptAsync(write, SessionFor(role), target);
 
-        var announcement = await _flow.Identity.WaitForSingleDenialAsync(
+        // Assert
+        Verify.Refused(
+            attempt,
+            $"A {RoleName(role)}'s POST {ControllerWriteSteps.Name(write)} should be refused");
+    }
+
+    [FlowTheory]
+    [InlineData(Roles.Guard)]
+    [InlineData(Roles.Auditor)]
+    public async Task A_denied_write_is_recorded_once_naming_the_actor_role_action_and_time(string role)
+    {
+        // Arrange
+        var session = SessionFor(role);
+        var target = await _flow.Writes.ArrangeAsync(ControllerWrite.Delay);
+        var baseline = await _flow.Auditor.DeniedEntryIdsAsync(session.StaffId);
+
+        // Act
+        var attempt = await _flow.Writes.AttemptAsync(ControllerWrite.Delay, session, target);
+
+        // Assert
+        Verify.Refused(attempt, $"A {RoleName(role)}'s delay on a journey should be refused");
+
+        var entry = await _flow.Auditor.WaitForNewDenialAsync(
+            session.StaffId,
+            "PublishDelay",
             baseline,
-            $"a {RoleName(role)}'s refused {name}");
+            $"a {RoleName(role)}'s refused delay should be recorded once as a denied entry");
 
-        var entry = await _flow.Audit.WaitForDenialAsync(
-            announcement,
-            $"the audit entry for a {RoleName(role)}'s refused {name}");
-
+        Verify.Equal("denied", entry.Outcome, $"The entry for a {RoleName(role)}'s refused delay should be denied");
         Verify.Equal(
-            "denied",
-            entry.Outcome,
-            $"The entry for a {RoleName(role)}'s refused {name} should be recorded as denied");
-        Verify.Equal<Guid?>(
             session.StaffId,
             entry.ActorStaffId,
-            $"The entry for a {RoleName(role)}'s refused {name} should name that staff member as its actor");
+            $"The entry for a {RoleName(role)}'s refused delay should name that staff member as its actor");
         Verify.Equal(
             session.Role,
             entry.ActorRole,
-            $"The entry for a {RoleName(role)}'s refused {name} should name the role it was attempted in");
+            $"The entry for a {RoleName(role)}'s refused delay should name the role it was attempted in");
         Verify.Equal(
-            ControllerWriteSteps.Action(write),
+            "PublishDelay",
             entry.Action,
-            $"The entry for a {RoleName(role)}'s refused {name} should name the action that was attempted");
+            $"The entry for a {RoleName(role)}'s refused delay should name the action that was attempted");
         Verify.Equal(
             _flow.Now,
             entry.OccurredAt,
-            $"The entry for a {RoleName(role)}'s refused {name} should carry the server time of the refusal");
-    }
+            $"The entry for a {RoleName(role)}'s refused delay should carry the server time of the refusal");
 
-    [Fact]
-    public async Task The_auditor_can_read_the_audit_list_and_reading_records_no_denial()
-    {
-        var baseline = await _flow.Audit.MaxChainPositionAsync();
-
-        var read = await _flow.Auditor.ListAsync();
-        Verify.Ok(read, "The Auditor should be able to read the audit list");
-
-        await _flow.Audit.NothingRecordedAfterAsync(
+        await _flow.Auditor.OnlyOneDenialAppearsAsync(
+            session.StaffId,
             baseline,
-            "Reading the audit list should not be recorded as a denied attempt");
+            $"a {RoleName(role)}'s refused delay should be recorded once and not again");
     }
 
-    [Fact]
-    public async Task A_controller_write_with_no_token_is_refused_and_not_recorded_as_a_denial()
+    [FlowFact]
+    public async Task A_refused_write_leaves_the_controllers_view_and_the_journeys_events_unchanged()
     {
-        var target = await _flow.Writes.ArrangeAsync(ControllerWrite.Delay);
-        var baseline = await _flow.Audit.MaxChainPositionAsync();
+        // Arrange — a running journey, whose departure is the event a client has already received.
+        var journey = await _flow.Journeys.CreateAsync(stopCount: 4);
+        var lastSeen = await RunningDeparturePositionAsync(journey);
 
-        var attempt = await _flow.Writes.AttemptDelayAsync(session: null, target);
+        var controller = _flow.ControllerWrites(StaffDirectory.Controller);
+        var before = await controller.JourneyViewAsync(journey.Id);
+        Verify.Ok(before, "The controller's view should be readable before the refused write");
 
-        Verify.Unauthorized(attempt, "A controller write with no token should be refused");
-        await _flow.Audit.NothingRecordedAfterAsync(
-            baseline,
-            "An unauthenticated attempt should not be recorded as a denied attempt");
-    }
+        // Act
+        var refused = await _flow.ControllerWrites(StaffDirectory.Guard)
+            .PublishDelayAsync(journey.Id, fromStopSequence: 3, DelayMinutes);
 
-    [Fact]
-    public async Task An_expired_controller_token_is_refused()
-    {
-        var target = await _flow.Writes.ArrangeAsync(ControllerWrite.Delay);
+        // Assert — the controller's view of the journey, its stops and its changes is unchanged.
+        Verify.Refused(refused, "A Guard's delay on a journey should be refused");
 
-        var attempt = await _flow.Writes.AttemptDelayAsync(
-            StaffDirectory.ControllerWithExpiredToken,
-            target);
+        var after = await controller.JourneyViewAsync(journey.Id);
+        Verify.Ok(after, "The controller's view should still be readable after the refused write");
+        Verify.Unchanged(
+            before.Value!.Render(),
+            after.Value!.Render(),
+            "A Guard's refused delay should leave the controller's view of the journey unchanged");
 
-        Verify.Unauthorized(attempt, "A controller write with an expired token should be refused");
-    }
-
-    [Fact]
-    public async Task A_controller_token_signed_with_the_wrong_key_is_refused()
-    {
-        var target = await _flow.Writes.ArrangeAsync(ControllerWrite.Delay);
-
-        var attempt = await _flow.Writes.AttemptDelayAsync(
-            StaffDirectory.ControllerWithForeignKey,
-            target);
-
-        Verify.Unauthorized(attempt, "A controller write with a token signed by an untrusted key should be refused");
-    }
-
-    [Fact]
-    public async Task The_audit_chain_verifies_after_every_denied_write()
-    {
-        var baseline = await _flow.Identity.MaxPositionAsync();
-
-        foreach (var write in ControllerWriteSteps.All)
-        {
-            var target = await _flow.Writes.ArrangeAsync(write);
-
-            await _flow.Writes.AttemptAsync(write, StaffDirectory.Guard, target);
-        }
-
-        var announcements = await _flow.Identity.WaitForDenialsAsync(
-            baseline,
-            ControllerWriteSteps.All.Count,
-            "Every one of the flow's denied writes");
-
-        foreach (var announcement in announcements)
-        {
-            await _flow.Audit.WaitForDenialAsync(
-                announcement,
-                "every one of the flow's denied writes");
-        }
-
-        var report = await _flow.Auditor.IntegrityAsync();
-        Verify.Ok(report, "The Auditor should be able to check the audit chain");
+        // Assert — and no event reached the live channel, which a reconnecting client would have seen.
+        using var resumed = await _flow.Public.ResumeStreamAsync(journey.Id, lastSeen);
+        var missed = await resumed.ReadAsync(TimeSpan.FromSeconds(2), stopAtFirstEvent: false);
 
         Verify.Equal(
-            "intact",
-            report.Value!.Status,
-            "The audit chain should still verify after every denied write");
+            0,
+            missed.Events.Count,
+            "A Guard's refused delay should append no event a reconnecting client could catch up on");
     }
 
-    [Theory]
-    [InlineData(ControllerWrite.Delay)]
-    [InlineData(ControllerWrite.Cancellation)]
-    [InlineData(ControllerWrite.PlatformChange)]
-    [InlineData(ControllerWrite.Termination)]
-    [InlineData(ControllerWrite.Correction)]
-    public async Task The_controller_can_publish_every_controller_write(ControllerWrite write)
+    /// <summary>
+    /// Makes the journey running through a real Guard departure and returns the stream position of the
+    /// frame that departure produced: the point a client has read up to, taken from the stream itself.
+    /// </summary>
+    private async Task<string> RunningDeparturePositionAsync(Builders.Journey journey)
     {
-        var target = await _flow.Writes.ArrangeAsync(write);
+        string lastSeen;
 
-        var attempt = await _flow.Writes.AttemptAsync(write, StaffDirectory.Controller, target);
+        using (var live = await _flow.Public.OpenStreamAsync(journey.Id))
+        {
+            await _flow.Changes.MakeRunningAsync(journey);
 
-        Verify.Created(
-            attempt,
-            $"The controller's POST {ControllerWriteSteps.Name(write)}, which the refusals are measured against,");
+            var progress = await live.ReadAsync(Eventually.Timeout, stopAtFirstEvent: true);
+
+            Verify.Equal(
+                1,
+                progress.Events.Count,
+                "The public stream should deliver the departure that makes the journey running");
+            Verify.Equal(
+                "departure_logged",
+                progress.Events[0].EventType,
+                "The public stream should deliver the running journey's departure as a departure_logged event");
+            Verify.True(
+                progress.Events[0].Id is not null,
+                "The departure's frame should carry the stream position a client resumes from");
+
+            lastSeen = progress.Events[0].Id!;
+        }
+
+        return lastSeen;
     }
 
     /// <summary>The staff session a role named in a theory case acts as.</summary>

@@ -35,24 +35,22 @@ internal sealed record ProviderWebhookPayload(
 
 /// <summary>
 /// A stub provider receiver on Kestrel: it records every webhook delivery SmartRail pushes and answers
-/// 200, or 503 for a fixed number of first attempts, which is the provider outage the retry schedule
-/// exists for. It is the simulated provider of these flows, run in-process so the checks stay at Layer A:
-/// the real subscription, dispatcher, delivery rows and retry are used, only the receiving server is a stub.
+/// 200. It is the simulated provider of these flows, run in-process so the checks stay at Layer A: the
+/// real subscription, dispatcher and payload are used, only the receiving server is a stub.
 /// </summary>
+/// <remarks>
+/// The provider's retry after a refusal, and the delivery row it leaves behind, are proven in
+/// <c>Catering.WebhookDispatchTests</c> and <c>Catering.WebhookDeliveriesConsumerTests</c>, which own the
+/// dispatcher; a flow only needs to see that the change arrives, once, in the shape the provider reads.
+/// </remarks>
 internal sealed class ProviderReceiver : IAsyncDisposable
 {
     /// <summary>How long a delivery may take to arrive before a flow fails.</summary>
     public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(25);
 
     private readonly WebApplication _app;
-    private readonly int _failuresBeforeSuccess;
-    private int _requests;
 
-    private ProviderReceiver(WebApplication app, int failuresBeforeSuccess)
-    {
-        _app = app;
-        _failuresBeforeSuccess = failuresBeforeSuccess;
-    }
+    private ProviderReceiver(WebApplication app) => _app = app;
 
     /// <summary>Every delivery the receiver was sent, in the order the provider would read them.</summary>
     public ConcurrentQueue<ProviderWebhookPayload> Deliveries { get; } = new();
@@ -60,15 +58,15 @@ internal sealed class ProviderReceiver : IAsyncDisposable
     /// <summary>The URL SmartRail is told to call.</summary>
     public string CallbackUrl { get; private set; } = string.Empty;
 
-    /// <summary>Starts a receiver that answers 200, or 503 for the first <paramref name="failuresBeforeSuccess"/> attempts.</summary>
-    public static async Task<ProviderReceiver> StartAsync(int failuresBeforeSuccess = 0)
+    /// <summary>Starts a receiver that records every delivery and accepts it.</summary>
+    public static async Task<ProviderReceiver> StartAsync()
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
 
         var app = builder.Build();
-        var receiver = new ProviderReceiver(app, failuresBeforeSuccess);
+        var receiver = new ProviderReceiver(app);
 
         app.MapPost("/webhook", async (HttpContext context) =>
         {
@@ -76,11 +74,7 @@ internal sealed class ProviderReceiver : IAsyncDisposable
 
             receiver.Deliveries.Enqueue(Read(document.RootElement));
 
-            var requestNumber = Interlocked.Increment(ref receiver._requests);
-
-            return requestNumber <= receiver._failuresBeforeSuccess
-                ? Results.StatusCode(StatusCodes.Status503ServiceUnavailable)
-                : Results.Ok();
+            return Results.Ok();
         });
 
         await app.StartAsync();

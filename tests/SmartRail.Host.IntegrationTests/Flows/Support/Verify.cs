@@ -23,13 +23,6 @@ internal static class Verify
     /// <summary>The condition holds, or the behaviour named in <paramref name="behaviour"/> broke.</summary>
     public static void True(bool condition, string behaviour) => Assert.True(condition, $"{behaviour}.");
 
-    /// <summary>The collection is empty, or the behaviour named in <paramref name="behaviour"/> broke.</summary>
-    public static void Empty<T>(IReadOnlyCollection<T> items, string behaviour) =>
-        Assert.True(
-            items.Count == 0,
-            $"{behaviour}, but {items.Count} row(s) were there: "
-            + $"[{string.Join(" ; ", items)}]");
-
     /// <summary>A scenario write should be accepted with 201 and carry the change it published.</summary>
     public static void Created<T>(ApiAttempt<T> attempt, string behaviour)
         where T : class
