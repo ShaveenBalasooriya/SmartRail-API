@@ -49,3 +49,23 @@ public sealed class ApiTheoryAttribute : TheoryAttribute
         }
     }
 }
+
+/// <summary>
+/// A fact that needs the in-process host's own signing key (for example to mint an expired token),
+/// so it is skipped, with the reason, against a deployed API whose key the tests do not hold.
+/// </summary>
+public sealed class InProcessApiFactAttribute : FactAttribute
+{
+    /// <summary>Marks the test skipped when the target is remote or lacks a prerequisite.</summary>
+    public InProcessApiFactAttribute()
+    {
+        if (ApiTarget.IsRemote)
+        {
+            Skip = "Needs the in-process host's signing key to mint the token; not available against a deployed API.";
+        }
+        else if (ApiTarget.MissingPrerequisite is { } missing)
+        {
+            Skip = missing;
+        }
+    }
+}
