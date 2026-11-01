@@ -2,6 +2,7 @@
   <PropertyGroup><IsTestProject>true</IsTestProject><IsPackable>false</IsPackable></PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Domain/SmartRail.RailNetwork.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Application/SmartRail.RailNetwork.Application.csproj" />
     <ProjectReference Include="../../src/Modules/RailNetwork/SmartRail.RailNetwork.Infrastructure/SmartRail.RailNetwork.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
