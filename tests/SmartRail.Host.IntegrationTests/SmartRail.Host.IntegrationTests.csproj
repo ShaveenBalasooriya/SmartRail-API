@@ -16,6 +16,11 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The black-box API test project reuses this harness (the factory and the local staff tokens);
+         it defines no types of its own here. -->
+    <InternalsVisibleTo Include="SmartRail.Api.Tests" />
+  </ItemGroup>
 
 </Project>
 
