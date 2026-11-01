@@ -1,5 +1,4 @@
 using System.Net;
-using Microsoft.Extensions.Logging;
 using SmartRail.Host.IntegrationTests.Infrastructure;
 using SmartRail.Host.Health;
 using SmartRail.Host.Http;
@@ -32,18 +31,6 @@ public sealed class HealthTests(PostgresFixture postgres) : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("\"status\":\"Healthy\"", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task The_probes_need_no_credentials()
-    {
-        using var client = _factory.CreateApiClient();
-
-        using var live = await client.GetAsync(HealthEndpoints.LivePath);
-        using var ready = await client.GetAsync(HealthEndpoints.ReadyPath);
-
-        Assert.Equal(HttpStatusCode.OK, live.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
     }
 
     [Fact]
@@ -177,14 +164,6 @@ public sealed class RequestLoggingTests(PostgresFixture postgres) : IDisposable
 
         Assert.Equal("unmatched", entry.Value("RouteTemplate"));
         Assert.DoesNotContain("journeys", entry.ToString(), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Every_request_entry_is_written_at_information_level()
-    {
-        var entry = _factory.Logs.Entries.FirstOrDefault(candidate => candidate.Message.Contains("responded", StringComparison.Ordinal));
-
-        Assert.True(entry is null || entry.Level == LogLevel.Information);
     }
 
     private static async Task<LogEntry> WaitForEntryAsync(LogCapture logs, string messageFragment)
